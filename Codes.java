@@ -9,7 +9,7 @@ public class Codes {
 
     public String mainOpen(String className) {
         return String.format(
-                "public class %s {\n%  s() {} \npublic static void main(String[] args) {\nint a = Integer.parseInt(args[0]); \nint b = Integer.parseInt(args[1]); \nint c = ",
+                "public class %s {\n%s() {} \npublic static void main(String[] args) {\nint a = Integer.parseInt(args[0]); \nint b = Integer.parseInt(args[1]); \nint c = ",
                 className, className);
 
     }
