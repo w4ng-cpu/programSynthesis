@@ -37,9 +37,8 @@ public class MemoryCompiler {
 		MemoryFileManager fileManager = new MemoryFileManager(compiler.getStandardFileManager(null, null, null), classLoader);
 		
         JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, collector, options, null, compilationUnit);
-        System.out.println("Actually conpiling");
+
 		boolean result = task.call();
-        System.out.println(result);
         if (result == true) {
             try {
                 System.out.println("compiled!");
