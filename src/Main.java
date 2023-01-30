@@ -3,22 +3,14 @@ package src;
 import java.lang.reflect.InvocationTargetException;
 
 import src.compiler.MemoryCompiler;
+import src.generator.ProgramSearcher;
 
 
 
 public class Main {
     public static void main(String args[]) {
-        String rawCode = "package src;\npublic class CustomClass {\npublic Integer aFunction(Integer a) {\nSystem.out.println(a);\nreturn a + 3;\n} \n}";
-
-        Class<?> myClass = MemoryCompiler.newInstance().compile("src.CustomClass", rawCode);
-
-        try {
-            Integer result = (Integer) myClass.getMethod("aFunction", Integer.class).invoke(myClass.getConstructor().newInstance(), Integer.valueOf(1));
-            System.out.println(result);
-        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
-                | SecurityException | InstantiationException e) {
-            System.out.println("Failed Invoke");
-            e.printStackTrace();
-        }
+        ProgramSearcher generateSource = new ProgramSearcher(1, 2);
+        String result = generateSource.startSearch();
+        System.out.println(result);
     }
 }

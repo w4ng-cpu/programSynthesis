@@ -25,7 +25,7 @@ public class MemoryCompiler {
     public Class<?> compile(String className, String sourceCode) {
         List<JavaFileObject> compilationUnit = new ArrayList<JavaFileObject>(1);
         try {
-            System.out.println("created compilationUnit!");
+            //System.out.println("created compilationUnit!");
             compilationUnit.add(new SourceBuffer(className, sourceCode));
         } catch (Exception e) {
             System.out.println("SourceBuffer URI exception");
@@ -41,7 +41,7 @@ public class MemoryCompiler {
 		boolean result = task.call();
         if (result == true) {
             try {
-                System.out.println("compiled!");
+                //System.out.println("compiled!");
                 return classLoader.findClass(className);
             } catch (ClassNotFoundException e) {
                 System.out.println("Class not found");
