@@ -17,7 +17,7 @@ public class Main {
             System.out.println(result);
         } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
                 | SecurityException | InstantiationException e) {
-            // TODO Auto-generated catch block
+            System.out.println("Failed Invoke");
             e.printStackTrace();
         }
     }
