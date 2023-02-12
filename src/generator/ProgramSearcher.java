@@ -1,70 +1,73 @@
 package src.generator;
 
 import src.compiler.MemoryCompiler;
+import src.syntax.IntDecisionTree;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 
 
-
+/**
+ * Uses Syntax Guide
+ */
 public class ProgramSearcher {
-    final private int MAXEXPRESSIONS = 6;
+    final private int MAXLINE = 1;
 
     private int input;
     private int output;
     private SourcePacker sourcePacker;
-
-    private ArrayList<String> Expressions = new ArrayList<>();
+    private IntDecisionTree decisionTree;
+    private ArrayList<String> statements;
     
     public ProgramSearcher(int input, int output) {
         this.input = input;
         this.output = output;
-        this.sourcePacker =new SourcePacker();
-        addExpressions();
+        this.sourcePacker = new SourcePacker();
+        this.decisionTree = new IntDecisionTree();
+        this.statements = decisionTree.initStatementsArray();
     }
 
 
     public String startSearch() {
         String result = "";
         
-        result = search(result, 0);
+        result = search(result, 1);
 
         return result;
     }
 
 
-    public String search(String currentStatement, int expressionsUsed) {
+    public String search(String lastStatement, int lineNumber) {
+        ArrayList<String> sourceComposition;
+        String currentStatement = "";
         String newStatement = "";
-        for (String expression : Expressions) {
-            newStatement = currentStatement + " " + expression;
-            //System.out.println(expressionsUsed);
-            //System.out.println(newStatement);
-            if (testString(newStatement + ";")) {
-                return newStatement;
-            }
-            else if (expressionsUsed < MAXEXPRESSIONS) {
-                int incExpressionsUsed = expressionsUsed + 1;
-                String returnString = search(newStatement, incExpressionsUsed);
-                if (testString(returnString + ";")) {
-                    return returnString;
-                }
+        for (String statement : statements) {
+            System.out.println(statement);
+            sourceComposition = decisionTree.getTerminals(statement);
+            for (String terminal : sourceComposition) {
+                System.out.println(terminal);
+                //create variations from these terminals
+                //test
+                //save successful compilations for next round
             }
         }
+
         return newStatement;
     }
 
     /**
      * test generated statements
      * packs into a proper java source code and test if matches input and output
+     * returns -1 if it fails to compile, 0 if compile but bad output, 1 if result
      * @param statements
      * @return
      */
-    public boolean testString(String statements) {
+    public int testString(String statements) {
         String rawCode = sourcePacker.pack(statements);
         Class<?> myClass = MemoryCompiler.newInstance().compile("src.CustomClass", rawCode);
         if (myClass == null) {
-            return false;
+            return -1;
         }
 
         //System.out.println(rawCode);
@@ -79,25 +82,41 @@ public class ProgramSearcher {
                 | SecurityException | InstantiationException e) {
             System.out.println("Failed Invoke");
             e.printStackTrace();
-            return false;
+            return -1;
         }
         
         if (result == output) {
-            return true;
+            return 1;
         }
         else {
-            return false;
+            return 0;
         }
     }
-    
-    private void addExpressions() {
-        Expressions.add("return");
-        Expressions.add("a");
-        Expressions.add("-");
-        Expressions.add("=");
-        Expressions.add("*");
-        Expressions.add("+");
-        Expressions.add("2");
-    }
 
+
+    /**
+     *         for (String expressionLHS : ExpressionsLHS) {
+            statement = currentStatement + expressionLHS;
+            for (String expressionRHS : ExpressionsRHS) {
+                newStatement = statement + " " + expressionRHS;
+                System.out.println(newStatement);
+                int test = testString(newStatement + ";");
+                if (test == -1) {
+                }
+                else if (test == 0 && lineNumber < MAXLINE) {
+                    int incLineNumber = lineNumber++;
+                    String result = search(newStatement + ";\n", incLineNumber);
+                    if (testString(result + ";") == 1) {
+                        return result;
+                    }
+                }
+                else if (test == 1) {
+                    return newStatement;
+                }
+                else {
+
+                }
+            }
+        }
+     */
 }

@@ -8,7 +8,7 @@ import java.util.ArrayList;
 
 
 /**
- * Uses LHS and RHS
+ * Uses LHS and RHS, not very versatile
  */
 public class ProgramSearcher2 {
     final private int MAXLINE = 2;
