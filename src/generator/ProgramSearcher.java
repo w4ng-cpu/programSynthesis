@@ -2,43 +2,55 @@ package src.generator;
 
 import src.compiler.MemoryCompiler;
 import src.syntax.IntDecisionTree;
+import src.syntax.TerminalConvert;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+
+import javax.sound.sampled.BooleanControl;
 
 
 /**
  * Uses Syntax Guide
  */
 public class ProgramSearcher {
-    final private int MAXLINE = 1;
+    final private int MAXLINE = 2;
 
     private int input;
     private int output;
     private SourcePacker sourcePacker;
     private IntDecisionTree decisionTree;
+    private TerminalConvert terminalConvert;
     private ArrayList<String> statements;
+
+    private ArrayList<String> compiledStatements;
     
     public ProgramSearcher(int input, int output) {
         this.input = input;
         this.output = output;
         this.sourcePacker = new SourcePacker();
         this.decisionTree = new IntDecisionTree();
+        this.terminalConvert = new TerminalConvert();
         this.statements = decisionTree.initStatementsArray();
+
+        this.compiledStatements = new ArrayList<>();
+        this.compiledStatements.add("");
     }
 
 
     public String startSearch() {
         String result = "";
+        boolean found = false;
         
-        result = search(result, 1);
+        //loop while not found or line number not MAXLINE
+        found = searchNewLine();
 
         return result;
     }
 
 
-    public String search(String lastStatement, int lineNumber) {
+    public boolean searchNewLine() {
         ArrayList<String> sourceComposition;
         String currentStatement = "";
         String newStatement = "";
@@ -46,14 +58,18 @@ public class ProgramSearcher {
             System.out.println(statement);
             sourceComposition = decisionTree.getTerminals(statement);
             for (String terminal : sourceComposition) {
-                System.out.println(terminal);
+                System.out.println("TERMINAL: " + terminal);
+                ArrayList<String> words = terminalConvert.getFromTerminal(terminal);
+                for (String word : words) {
+                    System.out.println(word);
+                }
                 //create variations from these terminals
                 //test
                 //save successful compilations for next round
             }
         }
 
-        return newStatement;
+        return false;
     }
 
     /**

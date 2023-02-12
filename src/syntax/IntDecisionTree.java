@@ -38,4 +38,8 @@ public class IntDecisionTree {
         }
         return returnTerminals;
     }
+
+    private void initTerminalArrays() {
+
+    }
 }
