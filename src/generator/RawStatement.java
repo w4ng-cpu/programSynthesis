@@ -2,29 +2,27 @@ package src.generator;
 
 import java.util.ArrayList;
 
-public class RawStatements {
+public class RawStatement {
 
     private String statement;
     private ArrayList<String> usedVariables;
 
-    public RawStatements() {
+    public RawStatement() {
         this.statement = "";
         this.usedVariables = new ArrayList<>();
-        this.usedVariables.add("a");
     }
 
-    public RawStatements(String statement) {
+    public RawStatement(String statement) {
         this.statement = statement;
         this.usedVariables = new ArrayList<>();
-        this.usedVariables.add("a");
     }
 
-    public RawStatements(String statement, ArrayList<String> usedVariables) {
+    public RawStatement(String statement, ArrayList<String> usedVariables) {
         this.statement = statement;
         this.usedVariables = new ArrayList<>(usedVariables);
     }
 
-    public RawStatements(RawStatements copy) {
+    public RawStatement(RawStatement copy) {
         this.statement = new String(copy.get());
         this.usedVariables = new ArrayList<>(copy.getUsedVariables());
     }

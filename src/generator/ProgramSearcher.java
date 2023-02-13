@@ -6,7 +6,6 @@ import src.syntax.IntTerminalConvert;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.file.attribute.AclFileAttributeView;
 import java.util.ArrayList;
 
 
@@ -23,8 +22,8 @@ public class ProgramSearcher {
     private IntTerminalConvert terminalConvert;
     private ArrayList<String> statements;
 
-    private ArrayList<RawStatements> newCompiledStatements;
-    private ArrayList<RawStatements> compiledStatements;
+    private ArrayList<RawStatement> newCompiledStatements;
+    private ArrayList<RawStatement> compiledStatements;
     private ArrayList<String> passedStatements;
 
     private ArrayList<String> returnComposition;
@@ -37,11 +36,10 @@ public class ProgramSearcher {
         this.output = output;
         this.sourcePacker = new SourcePacker();
         this.decisionTree = new IntDecisionTree();
-        this.terminalConvert = new IntTerminalConvert();
         this.statements = decisionTree.initStatementsArray();
 
         this.compiledStatements = new ArrayList<>();
-        this.compiledStatements.add(new RawStatements());
+        this.compiledStatements.add(new RawStatement());
         this.passedStatements = new ArrayList<>();
 
         this.returnComposition = decisionTree.getTerminals("RETURN_STATEMENT");
@@ -72,11 +70,12 @@ public class ProgramSearcher {
     public void searchNewLine() {
         newCompiledStatements = new ArrayList<>();
 
-        for (RawStatements compiledStatement : compiledStatements) {
+        for (RawStatement compiledStatement : compiledStatements) {
+            this.terminalConvert = new IntTerminalConvert(compiledStatement);
             // need to pass compiledStatement into decisiontree as rawStatement?
+            generateReturnStatement(); //
             for (String statement : statements) {
                 //return if found?
-                generateReturnStatement(statement);
                 System.out.println("STATEMENT: " + statement);
                 ArrayList<ArrayList<String>> recurse = new ArrayList<>(); //stores terminalConvert
                 ArrayList<String> sourceComposition = decisionTree.getTerminals(statement);
@@ -85,7 +84,7 @@ public class ProgramSearcher {
                     recurse.add(terminalConvert.getFromTerminal(terminal));
                 }
                 System.out.println("----------GENERATING STATEMENT PERMUTATIONS----------");
-                recurseGenerateStatement(compiledStatement, recurse, 0);
+                recurseGenerateStatement("", compiledStatement, recurse, 0);
             }
         }
         System.out.println("\n---------------------------------------");
@@ -103,29 +102,31 @@ public class ProgramSearcher {
      * @param recurseList
      * @param position
      */
-    public void recurseGenerateStatement(RawStatements currentStatement, ArrayList<ArrayList<String>> recurseList, int position) {
+    public void recurseGenerateStatement(String currentStatement, RawStatement previousLine, ArrayList<ArrayList<String>> recurseList, int position) {
         for (String word : recurseList.get(position)) {
             //return if found??
             String newStatement = currentStatement + " " + word;
 
             if (position < recurseList.size() - 1) {
-                recurseGenerateStatement(newStatement, recurseList, position + 1);
+                recurseGenerateStatement(newStatement, previousLine, recurseList, position + 1);
             }
             else {
                 // now add on the return statement
                 //for each return statement generated
                 for (String returnStatement : returnPermutations) {
                     numberOfGenerated++;
-                    String testStatement = "\n" + newStatement + "\n" + returnStatement;
+                    String testStatement = "\n" + previousLine.get() + "\n" + newStatement + "\n" + returnStatement;
                     System.out.println(testStatement);
                     int test = testString(testStatement);
     
                     if (test == 0) {
-                        newCompiledStatements.add(newStatement);
+                        RawStatement newRawStatement = new RawStatement(previousLine);
+                        newRawStatement.update(newStatement);
+                        newCompiledStatements.add(newRawStatement);
                         System.out.println("COMPILED");
                     }
                     else if (test == 1) {
-                        passedStatements.add(testStatement);
+                        //passedStatements.add(testStatement);
                         System.out.println("FOUND");
                     }
                     else if (test == -1) {
@@ -133,7 +134,6 @@ public class ProgramSearcher {
                         System.out.println("FAILED TO COMPILATION");
                     }
                 }
-
             }
         }
     }
@@ -142,9 +142,9 @@ public class ProgramSearcher {
     /**
      * Assumes 
      * Uses rawStatement to figure out available variables/identifiers to return
-     * @param rawStatement
+     * Uses a already initiated terminalConvert
      */
-    public void generateReturnStatement(String rawStatement) {
+    public void generateReturnStatement() {
         returnPermutations.clear();
         ArrayList<ArrayList<String>> recurse = new ArrayList<>();
         for (String terminal : returnComposition) {

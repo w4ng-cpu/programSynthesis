@@ -2,21 +2,31 @@ package src.syntax;
 
 import java.util.ArrayList;
 
+import src.generator.RawStatement;
+
 /**
  * This is made for integers (check identifier)
  */
 public class IntTerminalConvert {
+    ArrayList<String> newIdentifierList = new ArrayList<>();
+    ArrayList<String> typeList = new ArrayList<>();
     ArrayList<String> identifierList = new ArrayList<>();
     ArrayList<String> assignmentOperatorList = new ArrayList<>();
+    ArrayList<String> simpleAssignmentOperatorList = new ArrayList<>();
     ArrayList<String> expressionList = new ArrayList<>();
     ArrayList<String> arithmeticOperatorList = new ArrayList<>();
     ArrayList<String> terminatorList = new ArrayList<>();
     ArrayList<String> returnList = new ArrayList<>();
 
+    RawStatement rawStatement;
 
-    public IntTerminalConvert() {
+    public IntTerminalConvert(RawStatement rawStatement) {
+        this.rawStatement = rawStatement;
+        addTypes();
+        addNewIdentifiers();
         addIdentifiers();
         addAssignmentOperators();
+        addSimpleAssignmentOperators();
         addExpressions();
         addArithmeticOperators();
         addTerminator();
@@ -32,6 +42,9 @@ public class IntTerminalConvert {
             case "assignment_operator":
                 listOfWords = new ArrayList<>(assignmentOperatorList);
                 break;
+            case "simple_assignment_operator":
+                listOfWords = new ArrayList<>(simpleAssignmentOperatorList);
+                break;
             case "expression":
                 listOfWords = new ArrayList<>(expressionList);
                 break;
@@ -44,6 +57,13 @@ public class IntTerminalConvert {
             case "return":
                 listOfWords = new ArrayList<>(returnList);
                 break;
+            case "new_identifier":
+                rawStatement.getUsedVariables().addAll(newIdentifierList);
+                listOfWords = new ArrayList<>(rawStatement.getUsedVariables());
+                break;
+            case "type":
+                listOfWords = new ArrayList<>(typeList);
+                break;
             default:
                 listOfWords = new ArrayList<>();
                 System.out.println("Could not find terminal");
@@ -51,8 +71,24 @@ public class IntTerminalConvert {
         return listOfWords;
     }
 
+    private void addTypes() {
+        typeList.add("int");
+    }
+
+    /**
+     * will always be size 1
+     */
+    private void addNewIdentifiers() {
+        int newNumberASCII = rawStatement.getUsedVariables().size();
+        if (newNumberASCII < 26) {
+            char newASCII = (char) (98 + newNumberASCII);
+            newIdentifierList.add(Character.toString(newASCII));
+        }
+    }
+
     private void addIdentifiers() {
-        identifierList.add("a");
+        identifierList.add("a"); //think I am going to keep this as an expression
+        identifierList.addAll(rawStatement.getUsedVariables());
     }
 
     private void addAssignmentOperators() {
@@ -64,6 +100,10 @@ public class IntTerminalConvert {
         assignmentOperatorList.add("%=");
     }
 
+    private void addSimpleAssignmentOperators() {
+        simpleAssignmentOperatorList.add("=");
+    }
+
     private void addExpressions() {
         expressionList.add("a");
         expressionList.add("1");
@@ -71,6 +111,7 @@ public class IntTerminalConvert {
         expressionList.add("3");
         expressionList.add("5");
         expressionList.add("7");
+        expressionList.addAll(rawStatement.getUsedVariables());
     }
 
     private void addArithmeticOperators() {

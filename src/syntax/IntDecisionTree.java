@@ -14,6 +14,7 @@ public class IntDecisionTree {
 
     public ArrayList<String> initStatementsArray() {
         ArrayList<String> statementArray = new ArrayList<>();
+        statementArray.add("DECLARATION_STATEMENT");
         statementArray.add("EXPRESSION_STATEMENT");
         return statementArray;
     }
@@ -32,7 +33,10 @@ public class IntDecisionTree {
             case "DECLARATION_STATEMENT":
                 returnTerminals.add("type");
                 returnTerminals.add("new_identifier");
+                returnTerminals.add("simple_assignment_operator");
+                returnTerminals.add("expression");
                 returnTerminals.add("terminator");
+                break;
             case "RETURN_STATEMENT":
                 returnTerminals.add("return");
                 returnTerminals.add("identifier");

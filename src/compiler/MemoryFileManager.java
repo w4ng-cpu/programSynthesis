@@ -22,7 +22,7 @@ public class MemoryFileManager extends ForwardingJavaFileManager<JavaFileManager
         try {
             ClassBuffer compiledClass = new ClassBuffer(className);
             classLoader.add(compiledClass);
-            System.out.println("Added compiledClass to classLoader");
+            //System.out.println("Added compiledClass to classLoader");
             return compiledClass;
         } catch (URISyntaxException e) {
             e.printStackTrace();
