@@ -58,8 +58,8 @@ public class IntTerminalConvert {
                 listOfWords = new ArrayList<>(returnList);
                 break;
             case "new_identifier":
-                rawStatement.getUsedVariables().addAll(newIdentifierList);
-                listOfWords = new ArrayList<>(rawStatement.getUsedVariables());
+                rawStatement.getUsedVariables().addAll(newIdentifierList);  //for rawStatement to remember next time
+                listOfWords = new ArrayList<>(newIdentifierList);
                 break;
             case "type":
                 listOfWords = new ArrayList<>(typeList);
@@ -97,7 +97,7 @@ public class IntTerminalConvert {
         assignmentOperatorList.add("-=");
         assignmentOperatorList.add("*=");
         assignmentOperatorList.add("/=");
-        assignmentOperatorList.add("%=");
+        //assignmentOperatorList.add("%=");
     }
 
     private void addSimpleAssignmentOperators() {
