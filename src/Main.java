@@ -1,7 +1,5 @@
 package src;
 
-import java.lang.reflect.InvocationTargetException;
-
 import src.generator.ProgramSearcher;
 
 

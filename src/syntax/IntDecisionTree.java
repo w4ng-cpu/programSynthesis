@@ -29,17 +29,18 @@ public class IntDecisionTree {
                 returnTerminals.add("expression");
                 returnTerminals.add("terminator");
                 break;
+            case "DECLARATION_STATEMENT":
+                returnTerminals.add("type");
+                returnTerminals.add("new_identifier");
+                returnTerminals.add("terminator");
             case "RETURN_STATEMENT":
                 returnTerminals.add("return");
                 returnTerminals.add("identifier");
+                returnTerminals.add("terminator");
                 break;
             default:
                 System.out.println("STATEMENT not found?");
         }
         return returnTerminals;
-    }
-
-    private void initTerminalArrays() {
-
     }
 }

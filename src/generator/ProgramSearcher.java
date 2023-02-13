@@ -2,13 +2,12 @@ package src.generator;
 
 import src.compiler.MemoryCompiler;
 import src.syntax.IntDecisionTree;
-import src.syntax.TerminalConvert;
+import src.syntax.IntTerminalConvert;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.attribute.AclFileAttributeView;
 import java.util.ArrayList;
-
-import javax.sound.sampled.BooleanControl;
 
 
 /**
@@ -21,55 +20,156 @@ public class ProgramSearcher {
     private int output;
     private SourcePacker sourcePacker;
     private IntDecisionTree decisionTree;
-    private TerminalConvert terminalConvert;
+    private IntTerminalConvert terminalConvert;
     private ArrayList<String> statements;
 
+    private ArrayList<String> newCompiledStatements;
     private ArrayList<String> compiledStatements;
+    private ArrayList<String> passedStatements;
+
+    private ArrayList<String> returnComposition;
+    private ArrayList<String> returnPermutations;
+
+    private int numberOfGenerated = 0;
     
     public ProgramSearcher(int input, int output) {
         this.input = input;
         this.output = output;
         this.sourcePacker = new SourcePacker();
         this.decisionTree = new IntDecisionTree();
-        this.terminalConvert = new TerminalConvert();
+        this.terminalConvert = new IntTerminalConvert();
         this.statements = decisionTree.initStatementsArray();
 
         this.compiledStatements = new ArrayList<>();
         this.compiledStatements.add("");
+        this.passedStatements = new ArrayList<>();
+
+        this.returnComposition = decisionTree.getTerminals("RETURN_STATEMENT");
+        this.returnPermutations = new ArrayList<>();
     }
 
-
+    /**
+     * Start of search using given input and ouput
+     * @return
+     */
     public String startSearch() {
         String result = "";
-        boolean found = false;
+        int currentLine = 1;
         
         //loop while not found or line number not MAXLINE
-        found = searchNewLine();
+        while (passedStatements.isEmpty() && currentLine <= MAXLINE) {
+            searchNewLine();
+            compiledStatements = newCompiledStatements;
+            ++currentLine;
+        }
+
+        System.out.println("NUMBER OF PASSED: " + passedStatements.size());
 
         return result;
     }
 
 
-    public boolean searchNewLine() {
-        ArrayList<String> sourceComposition;
-        String currentStatement = "";
-        String newStatement = "";
-        for (String statement : statements) {
-            System.out.println(statement);
-            sourceComposition = decisionTree.getTerminals(statement);
-            for (String terminal : sourceComposition) {
-                System.out.println("TERMINAL: " + terminal);
-                ArrayList<String> words = terminalConvert.getFromTerminal(terminal);
-                for (String word : words) {
-                    System.out.println(word);
+    public void searchNewLine() {
+        newCompiledStatements = new ArrayList<>();
+
+        for (String compiledStatement : compiledStatements) {
+            // need to pass compiledStatement into decisiontree as rawStatement?
+            for (String statement : statements) {
+                //return if found?
+                generateReturnStatement(statement);
+                System.out.println("STATEMENT: " + statement);
+                ArrayList<ArrayList<String>> recurse = new ArrayList<>(); //stores terminalConvert
+                ArrayList<String> sourceComposition = decisionTree.getTerminals(statement);
+                for (String terminal : sourceComposition) {
+                    System.out.println("TERMINAL: " + terminal);
+                    recurse.add(terminalConvert.getFromTerminal(terminal));
                 }
-                //create variations from these terminals
-                //test
-                //save successful compilations for next round
+                System.out.println("----------GENERATING STATEMENT PERMUTATIONS----------");
+                recurseGenerateStatement(compiledStatement, recurse, 0);
             }
         }
+        System.out.println("\n---------------------------------------");
+        System.out.println("NUMBER OF GENERATED: " + numberOfGenerated);
+        System.out.println("NUMBER OF FAILED COMPILE: " + (numberOfGenerated - (newCompiledStatements.size() + passedStatements.size())));
+        System.out.println("NUMBER OF COMPILED: " + (newCompiledStatements.size() + passedStatements.size()));
 
-        return false;
+        return;
+    }
+
+    /**
+     * Will assume recurseList will not be empty
+     * Need to contain the compiledStatement
+     * @param currentStatement
+     * @param recurseList
+     * @param position
+     */
+    public void recurseGenerateStatement(String currentStatement, ArrayList<ArrayList<String>> recurseList, int position) {
+        for (String word : recurseList.get(position)) {
+            //return if found??
+            String newStatement = currentStatement + " " + word;
+
+            if (position < recurseList.size() - 1) {
+                recurseGenerateStatement(newStatement, recurseList, position + 1);
+            }
+            else {
+                // now add on the return statement
+                //for each return statement generated
+                for (String returnStatement : returnPermutations) {
+                    numberOfGenerated++;
+                    String testStatement = "\n" + newStatement + "\n" + returnStatement;
+                    System.out.println(testStatement);
+                    int test = testString(testStatement);
+    
+                    if (test == 0) {
+                        newCompiledStatements.add(newStatement);
+                        System.out.println("COMPILED");
+                    }
+                    else if (test == 1) {
+                        passedStatements.add(testStatement);
+                        System.out.println("FOUND");
+                    }
+                    else if (test == -1) {
+                        //failed to compile
+                        System.out.println("FAILED TO COMPILATION");
+                    }
+                }
+
+            }
+        }
+    }
+
+
+    /**
+     * Assumes 
+     * Uses rawStatement to figure out available variables/identifiers to return
+     * @param rawStatement
+     */
+    public void generateReturnStatement(String rawStatement) {
+        returnPermutations.clear();
+        ArrayList<ArrayList<String>> recurse = new ArrayList<>();
+        for (String terminal : returnComposition) {
+            System.out.println("TERMINAL: " + terminal);
+            // if terminal add rawStatemnet's identifier ArrayList
+            recurse.add(terminalConvert.getFromTerminal(terminal));
+        }
+        System.out.println("----------GENERATING RETURN STATEMENT PERMUTATIONS----------");
+        returnPermutations.addAll(recurseGenerateReturnStatement("", recurse, 0));
+    }
+
+    public ArrayList<String> recurseGenerateReturnStatement(String currentStatement, ArrayList<ArrayList<String>> recurseList, int position) {
+        ArrayList<String> tempArrayList = new ArrayList<>();
+        for (String word : recurseList.get(position)) {
+            String newStatement = currentStatement + " " + word;
+
+            if (position < recurseList.size() - 1) {
+                tempArrayList.addAll(recurseGenerateReturnStatement(newStatement, recurseList, position + 1)); 
+            }
+            else {
+                System.out.println("\n" + newStatement);
+                tempArrayList.add(newStatement);
+            }
+        }
+        return tempArrayList;
     }
 
     /**
@@ -90,13 +190,13 @@ public class ProgramSearcher {
 
         Integer result;
         try {
-            System.out.println(rawCode + "\n");
+            //System.out.println(rawCode + "\n");
             Method method = myClass.getMethod("aFunction", Integer.class);
             result = (Integer) method.invoke(myClass.getConstructor().newInstance(), Integer.valueOf(input));
-            System.out.println("Output: " + result + "\n\n");
+            //System.out.println("Output: " + result + "\n\n");
         } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
                 | SecurityException | InstantiationException e) {
-            System.out.println("Failed Invoke");
+            //System.out.println("Failed Invoke");
             e.printStackTrace();
             return -1;
         }
@@ -108,31 +208,4 @@ public class ProgramSearcher {
             return 0;
         }
     }
-
-
-    /**
-     *         for (String expressionLHS : ExpressionsLHS) {
-            statement = currentStatement + expressionLHS;
-            for (String expressionRHS : ExpressionsRHS) {
-                newStatement = statement + " " + expressionRHS;
-                System.out.println(newStatement);
-                int test = testString(newStatement + ";");
-                if (test == -1) {
-                }
-                else if (test == 0 && lineNumber < MAXLINE) {
-                    int incLineNumber = lineNumber++;
-                    String result = search(newStatement + ";\n", incLineNumber);
-                    if (testString(result + ";") == 1) {
-                        return result;
-                    }
-                }
-                else if (test == 1) {
-                    return newStatement;
-                }
-                else {
-
-                }
-            }
-        }
-     */
 }

@@ -13,6 +13,17 @@ public class RawStatements {
         this.usedVariables.add("a");
     }
 
+    public RawStatements(String statement) {
+        this.statement = statement;
+        this.usedVariables = new ArrayList<>();
+        this.usedVariables.add("a");
+    }
+
+    public RawStatements(String statement, ArrayList<String> usedVariables) {
+        this.statement = statement;
+        this.usedVariables = new ArrayList<>(usedVariables);
+    }
+
     public String get() {
         return this.statement;
     }

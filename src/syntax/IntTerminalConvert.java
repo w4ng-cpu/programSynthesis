@@ -5,7 +5,7 @@ import java.util.ArrayList;
 /**
  * This is made for integers (check identifier)
  */
-public class TerminalConvert {
+public class IntTerminalConvert {
     ArrayList<String> identifierList = new ArrayList<>();
     ArrayList<String> assignmentOperatorList = new ArrayList<>();
     ArrayList<String> expressionList = new ArrayList<>();
@@ -14,7 +14,7 @@ public class TerminalConvert {
     ArrayList<String> returnList = new ArrayList<>();
 
 
-    public TerminalConvert() {
+    public IntTerminalConvert() {
         addIdentifiers();
         addAssignmentOperators();
         addExpressions();
