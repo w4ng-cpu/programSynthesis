@@ -23,8 +23,8 @@ public class ProgramSearcher {
     private IntTerminalConvert terminalConvert;
     private ArrayList<String> statements;
 
-    private ArrayList<String> newCompiledStatements;
-    private ArrayList<String> compiledStatements;
+    private ArrayList<RawStatements> newCompiledStatements;
+    private ArrayList<RawStatements> compiledStatements;
     private ArrayList<String> passedStatements;
 
     private ArrayList<String> returnComposition;
@@ -41,7 +41,7 @@ public class ProgramSearcher {
         this.statements = decisionTree.initStatementsArray();
 
         this.compiledStatements = new ArrayList<>();
-        this.compiledStatements.add("");
+        this.compiledStatements.add(new RawStatements());
         this.passedStatements = new ArrayList<>();
 
         this.returnComposition = decisionTree.getTerminals("RETURN_STATEMENT");
@@ -72,7 +72,7 @@ public class ProgramSearcher {
     public void searchNewLine() {
         newCompiledStatements = new ArrayList<>();
 
-        for (String compiledStatement : compiledStatements) {
+        for (RawStatements compiledStatement : compiledStatements) {
             // need to pass compiledStatement into decisiontree as rawStatement?
             for (String statement : statements) {
                 //return if found?
@@ -103,7 +103,7 @@ public class ProgramSearcher {
      * @param recurseList
      * @param position
      */
-    public void recurseGenerateStatement(String currentStatement, ArrayList<ArrayList<String>> recurseList, int position) {
+    public void recurseGenerateStatement(RawStatements currentStatement, ArrayList<ArrayList<String>> recurseList, int position) {
         for (String word : recurseList.get(position)) {
             //return if found??
             String newStatement = currentStatement + " " + word;

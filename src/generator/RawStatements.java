@@ -24,6 +24,13 @@ public class RawStatements {
         this.usedVariables = new ArrayList<>(usedVariables);
     }
 
+    public RawStatements(RawStatements copy) {
+        this.statement = new String(copy.get());
+        this.usedVariables = new ArrayList<>(copy.getUsedVariables());
+    }
+
+
+
     public String get() {
         return this.statement;
     }
