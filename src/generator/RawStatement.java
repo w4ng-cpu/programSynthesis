@@ -2,10 +2,12 @@ package src.generator;
 
 import java.util.ArrayList;
 
-public class RawStatement {
+public class RawStatement implements java.io.Serializable{
 
-    private String statement;
-    private ArrayList<String> usedVariables;
+    String statement;
+    ArrayList<String> usedVariables;
+
+    String toAppendString = "";
 
     public RawStatement() {
         this.statement = "";
@@ -27,6 +29,14 @@ public class RawStatement {
         this.usedVariables = new ArrayList<>(copy.getUsedVariables());
     }
 
+
+    public void appendString(String append) {
+        toAppendString += append;
+    }
+
+    public String getAppendString() {
+        return toAppendString;
+    }
 
 
     public String get() {

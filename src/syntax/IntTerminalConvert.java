@@ -18,10 +18,11 @@ public class IntTerminalConvert {
     ArrayList<String> terminatorList = new ArrayList<>();
     ArrayList<String> returnList = new ArrayList<>();
 
-    RawStatement rawStatement;
+    RawStatement baseRawStatement;
+    RawStatement newRawStatement;
 
     public IntTerminalConvert(RawStatement rawStatement) {
-        this.rawStatement = rawStatement;
+        this.baseRawStatement = rawStatement;
         addTypes();
         addNewIdentifiers();
         addIdentifiers();
@@ -32,6 +33,10 @@ public class IntTerminalConvert {
         addTerminator();
         addReturn();
     }
+
+    public void assignNewRawStatement(RawStatement rawStatement) {
+        this.newRawStatement = rawStatement;
+    } 
 
     public ArrayList<String> getFromTerminal(String terminal) {
         ArrayList<String> listOfWords;
@@ -58,7 +63,7 @@ public class IntTerminalConvert {
                 listOfWords = new ArrayList<>(returnList);
                 break;
             case "new_identifier":
-                rawStatement.getUsedVariables().addAll(newIdentifierList);  //for rawStatement to remember next time
+                newRawStatement.getUsedVariables().addAll(newIdentifierList);  //for rawStatement to remember next time, bad
                 listOfWords = new ArrayList<>(newIdentifierList);
                 break;
             case "type":
@@ -79,7 +84,7 @@ public class IntTerminalConvert {
      * will always be size 1
      */
     private void addNewIdentifiers() {
-        int newNumberASCII = rawStatement.getUsedVariables().size();
+        int newNumberASCII = baseRawStatement.getUsedVariables().size();
         if (newNumberASCII < 26) {
             char newASCII = (char) (98 + newNumberASCII);
             newIdentifierList.add(Character.toString(newASCII));
@@ -88,7 +93,7 @@ public class IntTerminalConvert {
 
     private void addIdentifiers() {
         identifierList.add("a"); //think I am going to keep this as an expression
-        identifierList.addAll(rawStatement.getUsedVariables());
+        identifierList.addAll(baseRawStatement.getUsedVariables());
     }
 
     private void addAssignmentOperators() {
@@ -111,7 +116,7 @@ public class IntTerminalConvert {
         expressionList.add("3");
         expressionList.add("5");
         expressionList.add("7");
-        expressionList.addAll(rawStatement.getUsedVariables());
+        expressionList.addAll(baseRawStatement.getUsedVariables());
     }
 
     private void addArithmeticOperators() {

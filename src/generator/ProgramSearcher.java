@@ -13,7 +13,7 @@ import java.util.ArrayList;
  * Uses Syntax Guide
  */
 public class ProgramSearcher {
-    final private int MAXLINE = 2;
+    final private int MAXLINE = 3;
 
     private int input;
     private int output;
@@ -39,60 +39,84 @@ public class ProgramSearcher {
         this.statements = decisionTree.initStatementsArray();
 
         this.compiledStatements = new ArrayList<>();
-        this.compiledStatements.add(new RawStatement());
         this.passedStatements = new ArrayList<>();
 
         this.returnComposition = decisionTree.getTerminals("RETURN_STATEMENT");
         this.returnPermutations = new ArrayList<>();
     }
 
+    public void setCompiledStatements(ArrayList<RawStatement> compiledStatements) {
+        this.compiledStatements = compiledStatements;
+    }
+
+    public ArrayList<RawStatement> getCompiledStatements() {
+        return new ArrayList<>(compiledStatements);
+    }
+
+    public void addToCompiledStatement(RawStatement rawStatement) {
+        this.compiledStatements.add(rawStatement);
+    }
+
     /**
      * Start of search using given input and ouput
      * @return
      */
-    public String startSearch() {
-        String result = "";
-        int currentLine = 1;
-        
+    public int startSearch() {
+        boolean found = false;
         //loop while not found or line number not MAXLINE
-        while (passedStatements.isEmpty() && currentLine <= MAXLINE) {
-            searchNewLine();
-            compiledStatements = newCompiledStatements;
-            ++currentLine;
+        while (!found) {
+            found = searchNewLine();
         }
 
         System.out.println("NUMBER OF PASSED: " + passedStatements.size());
+        
 
-        return result;
+        return passedStatements.size();
     }
 
 
-    public void searchNewLine() {
+    public boolean searchNewLine() {
         newCompiledStatements = new ArrayList<>();
 
         for (RawStatement compiledStatement : compiledStatements) {
             this.terminalConvert = new IntTerminalConvert(compiledStatement);
+            System.out.println("\n USED VARIABLES: ");
+            ArrayList<String> temp = compiledStatement.getUsedVariables();
+            for (String variable : temp) {
+                System.out.println(variable);
+            }
+            System.out.println("-----------------------------------------------------");
             // need to pass compiledStatement into decisiontree as rawStatement?
             generateReturnStatement(); //
+            //need to add the newRawStatement to terminalConvert
+            RawStatement newRawStatement;
             for (String statement : statements) {
-                //return if found?
+                newRawStatement = new RawStatement(compiledStatement); //resets toAppendString
+                terminalConvert.assignNewRawStatement(newRawStatement);
+                //return/break if found?
                 System.out.println("STATEMENT: " + statement);
                 ArrayList<ArrayList<String>> recurse = new ArrayList<>(); //stores terminalConvert
-                ArrayList<String> sourceComposition = decisionTree.getTerminals(statement);
+                ArrayList<String> sourceComposition = decisionTree.getTerminals(statement); //will also add usedVariables to my newRawStatement
                 for (String terminal : sourceComposition) {
                     System.out.println("TERMINAL: " + terminal);
                     recurse.add(terminalConvert.getFromTerminal(terminal));
                 }
                 System.out.println("----------GENERATING STATEMENT PERMUTATIONS----------");
-                recurseGenerateStatement("", compiledStatement, recurse, 0);
+                recurseGenerateStatement(newRawStatement, "", recurse, 0);
             }
         }
         System.out.println("\n---------------------------------------");
         System.out.println("NUMBER OF GENERATED: " + numberOfGenerated);
         System.out.println("NUMBER OF FAILED COMPILE: " + (numberOfGenerated - (newCompiledStatements.size() + passedStatements.size())));
         System.out.println("NUMBER OF COMPILED: " + (newCompiledStatements.size() + passedStatements.size()));
+        compiledStatements = newCompiledStatements;
 
-        return;
+        if (passedStatements.isEmpty()) {
+            return false;
+        }
+        else {
+            return true;
+        }
     }
 
     /**
@@ -102,31 +126,31 @@ public class ProgramSearcher {
      * @param recurseList
      * @param position
      */
-    public void recurseGenerateStatement(String currentStatement, RawStatement previousLine, ArrayList<ArrayList<String>> recurseList, int position) {
+    public void recurseGenerateStatement(RawStatement rawStatements, String statement, ArrayList<ArrayList<String>> recurseList, int position) {
         for (String word : recurseList.get(position)) {
             //return if found??
-            String newStatement = currentStatement + " " + word;
+            String newStatement = statement + " " + word;
 
             if (position < recurseList.size() - 1) {
-                recurseGenerateStatement(newStatement, previousLine, recurseList, position + 1);
+                recurseGenerateStatement(rawStatements, newStatement, recurseList, position + 1);
             }
             else {
                 // now add on the return statement
                 //for each return statement generated
                 for (String returnStatement : returnPermutations) {
                     numberOfGenerated++;
-                    String testStatement = "\n" + previousLine.get() + "\n" + newStatement + "\n" + returnStatement;
+                    String testStatement = "\n" + rawStatements.get() + "\n" + newStatement + "\n" + returnStatement;
                     System.out.println(testStatement);
                     int test = testString(testStatement);
     
                     if (test == 0) {
-                        RawStatement newRawStatement = new RawStatement(previousLine);
+                        RawStatement newRawStatement = new RawStatement(rawStatements);
                         newRawStatement.update(newStatement);
                         newCompiledStatements.add(newRawStatement);
                         System.out.println("COMPILED");
                     }
                     else if (test == 1) {
-                        //passedStatements.add(testStatement);
+                        passedStatements.add(testStatement);
                         System.out.println("FOUND");
                     }
                     else if (test == -1) {
