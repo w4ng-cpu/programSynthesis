@@ -146,9 +146,10 @@ public class Node implements NodeInterface{
         Node n = new Node(name + number, number);
         
         try {
-
+            //need to locate the registry that the controller is on
             NodeInterface stub = (NodeInterface) UnicastRemoteObject.exportObject(n, 0);
             Registry registry = LocateRegistry.getRegistry();
+            String url = "rmi://localhost:1099/" + n.getName();
             registry.rebind(n.getName(), stub);
 
             System.out.println("Server ready: " + n.getName());
@@ -172,8 +173,12 @@ public class Node implements NodeInterface{
         }
         else {
             System.out.println("Waiting for start node");
+            for (String nodeName : n.getNodeRegistry()) {
+                System.out.println(nodeName);
+            } 
         }
 
+        //everybody loops here until main node starts and starts everyone else
         while(n.startSearch == false) {
             try {
                 Thread.sleep(1000);
