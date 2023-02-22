@@ -10,6 +10,7 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
@@ -27,7 +28,7 @@ public class Node implements NodeInterface{
     Node(String name, int ID) {
         this.nname = name;
         this.ID = ID;
-        this.programSearcher = new ProgramSearcher(1, 21);
+        this.programSearcher = new ProgramSearcher();
         this.startSearch = false;
         this.nodeReady = false;
     }
@@ -52,6 +53,7 @@ public class Node implements NodeInterface{
         ArrayList<NodeInterface> nodesList = getAllNodes();
 
         ArrayList<RawStatement> compiledStatements = this.programSearcher.getCompiledStatements();
+        System.out.println();
         System.out.println("NumberStatements: " + compiledStatements.size());
         System.out.println("NumberNodes: " + nodesList.size());
 
@@ -59,8 +61,8 @@ public class Node implements NodeInterface{
         int remain = compiledStatements.size() % nodesList.size();
         int start = 0;
 
-        System.out.println("DividedUpInto: " + dividedUp);
-        System.out.println("Remainder: " + remain);
+        //System.out.println("DividedUpInto: " + dividedUp);
+        //System.out.println("Remainder: " + remain);
 
         for (NodeInterface node : nodesList) {
             int end = start + dividedUp;
@@ -68,10 +70,10 @@ public class Node implements NodeInterface{
                 end += 1;
                 remain--;
             }
-            System.out.println("Start: " + start);
-            System.out.println("End: " + end);
+            // System.out.println("Start: " + start);
+            // System.out.println("End: " + end);
             List<RawStatement> setOfCompiledStatements = compiledStatements.subList(start, end);
-            System.out.println(setOfCompiledStatements.size());
+            //System.out.println(setOfCompiledStatements.size());
 
             try {
                 for (RawStatement rawStatement : setOfCompiledStatements) {
@@ -163,6 +165,40 @@ public class Node implements NodeInterface{
         return nodesList;
     }
 
+    public FrontInterface getFrontInterface() {
+        ArrayList<String> regNodeList = new ArrayList<String>();
+        String tempName = null;
+        FrontInterface frontEnd = null;
+        Registry registry;
+        try {
+            registry = LocateRegistry.getRegistry();
+            Collections.addAll(regNodeList, registry.list());
+        } catch (Exception e) {
+            System.err.println("Exception:");
+            e.printStackTrace();
+            return null;
+        }
+
+        Iterator<String> itr = regNodeList.iterator();
+        regNodeList = new ArrayList<String>();
+
+        while (itr.hasNext()) {
+            String name = itr.next();
+            if (name.contains("Controller")) {
+                tempName = name;
+            }
+        }
+
+        try {
+            frontEnd = (FrontInterface) registry.lookup(tempName);
+        } catch (Exception e) {
+            System.err.println("Exception: FrontEnd not found");
+            e.printStackTrace();
+        }
+
+        return frontEnd;
+    }
+
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -207,11 +243,17 @@ public class Node implements NodeInterface{
             }
             n.nodeReady = false;
             n.startSearch = false;
+
             String program = n.getProgramSearcher().startSearch(); //return results send to frontend
 
             System.out.println(program);
-            //if it's the only node then generate first line and once done distribute compiledStatement to other nodes
-            //else wait until node is invoked
+
+            try {
+                n.getFrontInterface().foundProgram(program);
+            } catch (RemoteException e) {
+                System.out.println("Remote Exception");
+                e.printStackTrace();
+            }
         }
     }
 
@@ -232,13 +274,13 @@ public class Node implements NodeInterface{
 
     @Override
     public void addCompiledStatement(RawStatement rawStatement) throws RemoteException {
-        System.out.println(rawStatement.get());
+        //System.out.println(rawStatement.get()); //USEFUL
         getProgramSearcher().addToCompiledStatement(rawStatement);
     }
 
     @Override
     public void startSearch() {
-        System.out.println("Starting search with current compiled statements");
+        //System.out.println("Starting search with current compiled statements");
         this.startSearch = true;
     }
 
@@ -261,5 +303,10 @@ public class Node implements NodeInterface{
         this.setAllCompiledStatementsList(); //give everyone their compiled statement
 
         this.startSearch();
+    }
+
+    @Override
+    public void addIOExamples(Integer input, Integer output) {
+        getProgramSearcher().addIO(input, output);
     }
 }

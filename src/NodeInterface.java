@@ -20,4 +20,6 @@ public interface NodeInterface extends Remote {
     public boolean isReady() throws RemoteException;
 
     public int getID() throws RemoteException;
+
+    public void addIOExamples(Integer input, Integer output) throws RemoteException;
 }

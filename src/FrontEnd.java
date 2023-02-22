@@ -70,11 +70,12 @@ public class FrontEnd implements FrontInterface {
             case "startMainNodeSearch":
                 mainInitSearch();
                 break;
-            case "setInput(s)":
-                //TODO
-                break;
-            case "setOuput(s)":
-                //TODO
+            case "addIOExample":
+                try {
+                    addIOExample(arguments[1], arguments[2]);
+                } catch (Exception e) {
+                    System.out.println("Bad arguments");
+                }
                 break;
             case "resetAll(s)":
                 //TODO
@@ -89,6 +90,7 @@ public class FrontEnd implements FrontInterface {
         System.out.println("listNodes");
         System.out.println("chooseMainNode");
         System.out.println("startMainNodeSearch");
+        System.out.println("addIOExample [input] [output]");
     }
 
     public void listNodes() {
@@ -144,6 +146,29 @@ public class FrontEnd implements FrontInterface {
         System.out.println("Finished initialising: Taken " + (System.currentTimeMillis() - start) + "ms\nStarted search");
     }
 
+    public void addIOExample(String input, String output) {
+        Integer pInput, pOutput;
+        try {
+            pInput = Integer.parseInt(input);
+            pOutput = Integer.parseInt(output);
+        } catch (Exception e) {
+            System.out.println("Failed: Bad input output");
+            return;
+        }
+
+        ArrayList<String> nodesList = getNodeList();
+        for (String name : nodesList) {
+            try {
+                Registry registry = LocateRegistry.getRegistry();
+                NodeInterface node = (NodeInterface) registry.lookup(name);
+                node.addIOExamples(pInput, pOutput);
+                System.out.println(name + ": successfully added input: " + input + "; output: " + output);
+            } catch (Exception e) {
+                System.out.println("Remote Exception");
+            }
+        }
+    }
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -188,6 +213,7 @@ public class FrontEnd implements FrontInterface {
 
     @Override
     public void foundProgram(String program) throws RemoteException {
-        
+        System.out.println("Found:");
+        System.out.println(program);
     }
 }

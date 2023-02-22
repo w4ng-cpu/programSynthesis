@@ -7,6 +7,7 @@ import src.syntax.IntTerminalConvert;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 
 /**
@@ -15,8 +16,8 @@ import java.util.ArrayList;
 public class ProgramSearcher {
     final private int MAXLINE = 3;
 
-    private int input;
-    private int output;
+    private HashMap<Integer, Integer> io;   //key being input and value being expected output
+
     private SourcePacker sourcePacker;
     private IntDecisionTree decisionTree;
     private IntTerminalConvert terminalConvert;
@@ -29,14 +30,16 @@ public class ProgramSearcher {
     private ArrayList<String> returnComposition;
     private ArrayList<String> returnPermutations;
 
-    private int numberOfGenerated = 0;
+    private int noNewStatementGenerated = 0;
+
+    private int noTotalStatementGenerated = 0;
+    private int noTotalStatementCompiled = 0;
 
     private long startTime;
     private boolean found;
     
-    public ProgramSearcher(int input, int output) {
-        this.input = input;
-        this.output = output;
+    public ProgramSearcher() {
+        this.io = new HashMap<>();
         this.sourcePacker = new SourcePacker();
         this.decisionTree = new IntDecisionTree();
         this.statements = decisionTree.initStatementsArray();
@@ -48,6 +51,12 @@ public class ProgramSearcher {
         this.returnPermutations = new ArrayList<>();
 
         this.found = false;
+    }
+
+    public void addIO(Integer input, Integer output) {
+        this.io.put(input, output);
+        System.out.println(input + " " + this.io.get(input));
+        System.out.println("PS IO Size: " + io.size());
     }
 
     public void setCompiledStatements(ArrayList<RawStatement> compiledStatements) {
@@ -72,11 +81,14 @@ public class ProgramSearcher {
         while (!found) {
             found = searchNewLine();
         }
-
-        System.out.println("NUMBER OF PASSED: " + passedStatements.size());
+        System.out.println("\n----------------TOTAL STATEMENTS-----------------------");
+        System.out.println("NUMBER OF GENERATED: " + noTotalStatementGenerated);
+        System.out.println("NUMBER OF FAILED COMPILE: " + (noTotalStatementGenerated - (noTotalStatementCompiled + passedStatements.size())));
+        System.out.println("NUMBER OF COMPILED: " + (newCompiledStatements.size() + passedStatements.size()));
+        System.out.println();
+        System.out.println("NUMBER OF PASSED: " + passedStatements.size()); //useless when we leave after finding
         
-
-        return passedStatements.get(0); //return the first passed statement
+        return sourcePacker.pack(passedStatements.get(0)); //return the first passed statement
     }
 
 
@@ -110,7 +122,9 @@ public class ProgramSearcher {
                     System.out.println("TERMINAL: " + terminal);
                     recurse.add(terminalConvert.getFromTerminal(terminal));
                 }
-                System.out.println("----------GENERATING STATEMENT PERMUTATIONS----------");
+                System.out.println("----------GENERATING PERMUTATIONS OF STATEMENTS----------");
+                noTotalStatementCompiled += noNewStatementGenerated;
+                noNewStatementGenerated = 0;
                 recurseGenerateStatement(newRawStatement, "", recurse, 0);
 
                 if (!passedStatements.isEmpty()) {
@@ -121,10 +135,13 @@ public class ProgramSearcher {
                 break;
             }
         }
-        System.out.println("\n---------------------------------------");
-        System.out.println("NUMBER OF GENERATED: " + numberOfGenerated);
-        System.out.println("NUMBER OF FAILED COMPILE: " + (numberOfGenerated - (newCompiledStatements.size() + passedStatements.size())));
+        System.out.println("\n----------------NEW LINE STATEMENT-----------------------");
+        System.out.println("NUMBER OF GENERATED: " + noNewStatementGenerated);
+        System.out.println("NUMBER OF FAILED COMPILE: " + (noNewStatementGenerated - (newCompiledStatements.size() + passedStatements.size())));
         System.out.println("NUMBER OF COMPILED: " + (newCompiledStatements.size() + passedStatements.size()));
+        System.out.println();
+
+        noTotalStatementCompiled += newCompiledStatements.size();
         compiledStatements = newCompiledStatements;
 
         if (passedStatements.isEmpty() ) {  //or found
@@ -154,9 +171,9 @@ public class ProgramSearcher {
                 // now add on the return statement
                 //for each return statement generated
                 for (String returnStatement : returnPermutations) {
-                    numberOfGenerated++;
+                    noNewStatementGenerated++;
                     String testStatement = "\n" + rawStatements.get() + "\n" + newStatement + "\n" + returnStatement;
-                    System.out.println(testStatement);
+                    System.out.println(testStatement + "\n");
                     int test = testString(testStatement);
     
                     if (test == 0) {
@@ -229,7 +246,7 @@ public class ProgramSearcher {
         long start = System.currentTimeMillis();
         String rawCode = sourcePacker.pack(statements);
         Class<?> myClass = MemoryCompiler.newInstance().compile("src.CustomClass", rawCode);
-        System.out.println("Compile Time: " + (System.currentTimeMillis() - start));
+        //System.out.println("Compile Time: " + (System.currentTimeMillis() - start));
         if (myClass == null) {
             return -1;
         }
@@ -241,9 +258,17 @@ public class ProgramSearcher {
         try {
             //System.out.println(rawCode + "\n");
             Method method = myClass.getMethod("aFunction", Integer.class);
-            result = (Integer) method.invoke(myClass.getConstructor().newInstance(), Integer.valueOf(input));
 
-            System.out.println("Test Time: " + (System.currentTimeMillis() - start));
+            for (Integer key : io.keySet()) {
+                result = (Integer) method.invoke(myClass.getConstructor().newInstance(), Integer.valueOf(key));
+                System.out.println("input: " + key + "; expected output: " + io.get(key) + "; result: " + result);
+                if (!result.equals(io.get(key))) {
+                    return 0;
+                }
+            }
+            
+
+            //System.out.println("Test Time: " + (System.currentTimeMillis() - start));
             //System.out.println("Output: " + result + "\n\n");
         } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
                 | SecurityException | InstantiationException e) {
@@ -251,12 +276,7 @@ public class ProgramSearcher {
             e.printStackTrace();
             return -1;
         }
-        
-        if (result == output) {
-            return 1;
-        }
-        else {
-            return 0;
-        }
+
+        return 1;
     }
 }
