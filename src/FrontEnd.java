@@ -185,4 +185,9 @@ public class FrontEnd implements FrontInterface {
         // TODO Auto-generated method stub
         
     }
+
+    @Override
+    public void foundProgram(String program) throws RemoteException {
+        
+    }
 }

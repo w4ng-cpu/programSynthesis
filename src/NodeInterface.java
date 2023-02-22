@@ -17,5 +17,7 @@ public interface NodeInterface extends Remote {
 
     public void mainInitSearch() throws RemoteException;
 
+    public boolean isReady() throws RemoteException;
+
     public int getID() throws RemoteException;
 }

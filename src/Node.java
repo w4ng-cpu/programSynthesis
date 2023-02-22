@@ -21,14 +21,15 @@ public class Node implements NodeInterface{
     private int ID;
     private ProgramSearcher programSearcher;
 
+    public boolean nodeReady;
     public boolean startSearch;
-    public String mainNode = "unassinged";
 
     Node(String name, int ID) {
         this.nname = name;
         this.ID = ID;
         this.programSearcher = new ProgramSearcher(1, 21);
         this.startSearch = false;
+        this.nodeReady = false;
     }
 
     public String getName() {
@@ -195,7 +196,7 @@ public class Node implements NodeInterface{
 
         while(true) {
             System.out.println("Node Ready!");
-            //everybody loops here until main node starts and starts everyone else
+            n.nodeReady = true;
             while(n.startSearch == false) {
                 try {
                     Thread.sleep(1000);
@@ -204,8 +205,11 @@ public class Node implements NodeInterface{
                     e.printStackTrace();
                 }
             }
+            n.nodeReady = false;
             n.startSearch = false;
-            n.getProgramSearcher().startSearch(); //return results send to frontend
+            String program = n.getProgramSearcher().startSearch(); //return results send to frontend
+
+            System.out.println(program);
             //if it's the only node then generate first line and once done distribute compiledStatement to other nodes
             //else wait until node is invoked
         }
@@ -241,6 +245,11 @@ public class Node implements NodeInterface{
     @Override
     public int getID() {
         return this.ID;
+    }
+
+    @Override
+    public boolean isReady() {
+        return this.nodeReady;
     }
 
     @Override
