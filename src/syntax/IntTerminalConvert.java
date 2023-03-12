@@ -98,11 +98,11 @@ public class IntTerminalConvert {
 
     private void addAssignmentOperators() {
         assignmentOperatorList.add("=");
-        assignmentOperatorList.add("+=");
-        assignmentOperatorList.add("-=");
-        assignmentOperatorList.add("*=");
-        assignmentOperatorList.add("/=");
-        //assignmentOperatorList.add("%=");
+        // assignmentOperatorList.add("+=");
+        // assignmentOperatorList.add("-=");
+        // assignmentOperatorList.add("*=");
+        // assignmentOperatorList.add("/=");
+        // assignmentOperatorList.add("%=");
     }
 
     private void addSimpleAssignmentOperators() {
@@ -116,6 +116,9 @@ public class IntTerminalConvert {
         expressionList.add("3");
         expressionList.add("5");
         expressionList.add("7");
+        expressionList.add("10");
+        expressionList.add("100");
+        expressionList.add("-1");
         expressionList.addAll(baseRawStatement.getUsedVariables());
     }
 
