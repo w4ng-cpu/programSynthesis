@@ -120,7 +120,7 @@ public class ProgramSearcher {
                 ArrayList<String> sourceComposition = decisionTree.getTerminals(statement); //will also add usedVariables to my newRawStatement
                 for (String terminal : sourceComposition) {
                     System.out.println("TERMINAL: " + terminal);
-                    recurse.add(terminalConvert.getFromTerminal(terminal));
+                    recurse.add(terminalConvert.getFromTerminal(terminal)); //when new identifiers are asked for in declaration we add use variable to the current/new statement
                 }
                 System.out.println("----------GENERATING PERMUTATIONS OF STATEMENTS----------");
                 noTotalStatementCompiled += noNewStatementGenerated;
