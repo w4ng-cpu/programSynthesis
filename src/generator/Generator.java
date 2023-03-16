@@ -1,8 +1,8 @@
 package src.generator;
 
 import src.compiler.MemoryCompiler;
-import src.syntax.IntDecisionTree;
-import src.syntax.IntTerminalConvert;
+import src.language.StatementTypes;
+import src.language.Permutations;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -11,21 +11,20 @@ import java.util.HashMap;
 
 
 /**
- * Uses Syntax Guide
+ * Uses lines of statements to guide synthesis
  */
-public class ProgramSearcher {
-    final private int MAXLINE = 3;
+public class Generator {
+    final private int MAXLINE = 10;
 
-    private HashMap<Integer, Integer> io;   //key being input and value being expected output
+    private HashMap<Integer, Integer> io;       //input and output example pairs
+    private SourcePacker sourceCreator;         //converts our statementLists into source code
+    private StatementTypes statementStruct;     //defines the structure of statements we synthesise
+    private Permutations terminalValueLists;    //defines what values allowed for the terminals in statement structure
+    private ArrayList<String> statements;       //from statementStruct, gets non terminals ie declariation_statement
 
-    private SourcePacker sourcePacker;
-    private IntDecisionTree decisionTree;
-    private IntTerminalConvert terminalConvert;
-    private ArrayList<String> statements;   //from decisionTree, gets non terminals ie declariation_statement
-
-    private ArrayList<RawStatement> newCompiledStatements;
-    private ArrayList<RawStatement> compiledStatements;
-    private ArrayList<String> passedStatements;
+    private ArrayList<StatementsList> compiledStatementsList;
+    private ArrayList<StatementsList> searchStatementsList;
+    private ArrayList<String> passedStatementsList;
 
     private ArrayList<String> returnComposition;
     private ArrayList<String> returnPermutations;
@@ -38,16 +37,16 @@ public class ProgramSearcher {
     private long startTime;
     private boolean found;
     
-    public ProgramSearcher() {
+    public Generator() {
         this.io = new HashMap<>();
-        this.sourcePacker = new SourcePacker();
-        this.decisionTree = new IntDecisionTree();
-        this.statements = decisionTree.initStatementsArray();
+        this.sourceCreator = new SourcePacker();
+        this.statementStruct = new StatementTypes();
+        this.statements = statementStruct.initStatementsArray();
 
-        this.compiledStatements = new ArrayList<>();
-        this.passedStatements = new ArrayList<>();
+        this.searchStatementsList = new ArrayList<>();
+        this.passedStatementsList = new ArrayList<>();
 
-        this.returnComposition = decisionTree.getTerminals("RETURN_STATEMENT");
+        this.returnComposition = statementStruct.getTerminals("RETURN_STATEMENT");
         this.returnPermutations = new ArrayList<>();
 
         this.found = false;
@@ -59,16 +58,16 @@ public class ProgramSearcher {
         System.out.println("PS IO Size: " + io.size());
     }
 
-    public void setCompiledStatements(ArrayList<RawStatement> compiledStatements) {
-        this.compiledStatements = compiledStatements;
+    public void setSearchStatementsList(ArrayList<StatementsList> searchStatementsList) {
+        this.searchStatementsList = searchStatementsList;
     }
 
-    public ArrayList<RawStatement> getCompiledStatements() {
-        return new ArrayList<>(compiledStatements);
+    public ArrayList<StatementsList> getSearchStatementsList() {
+        return new ArrayList<>(searchStatementsList);
     }
 
-    public void addToCompiledStatement(RawStatement rawStatement) {
-        this.compiledStatements.add(rawStatement);
+    public void addToCompiledStatement(StatementsList rawStatement) {
+        this.searchStatementsList.add(rawStatement);
     }
 
     /**
@@ -83,68 +82,69 @@ public class ProgramSearcher {
         }
         System.out.println("\n----------------TOTAL STATEMENTS-----------------------");
         System.out.println("NUMBER OF GENERATED: " + noTotalStatementGenerated);
-        System.out.println("NUMBER OF FAILED COMPILE: " + (noTotalStatementGenerated - (noTotalStatementCompiled + passedStatements.size())));
-        System.out.println("NUMBER OF COMPILED: " + (newCompiledStatements.size() + passedStatements.size()));
+        System.out.println("NUMBER OF FAILED COMPILE: " + (noTotalStatementGenerated - (noTotalStatementCompiled + passedStatementsList.size())));
+        System.out.println("NUMBER OF COMPILED: " + (compiledStatementsList.size() + passedStatementsList.size()));
         System.out.println();
-        System.out.println("NUMBER OF PASSED: " + passedStatements.size()); //useless when we leave after finding
+        System.out.println("NUMBER OF PASSED: " + passedStatementsList.size()); //useless when we leave after finding
         
-        return sourcePacker.pack(passedStatements.get(0)); //return the first passed statement
+        return sourcePacker.pack(passedStatementsList.get(0)); //return the first passed statement
     }
 
 
     public boolean searchNewLine() {
-        if (!passedStatements.isEmpty()) {
+        if (!passedStatementsList.isEmpty()) {
             return true;
         }
         
-        newCompiledStatements = new ArrayList<>();
+        compiledStatementsList = new ArrayList<>();
 
-        for (RawStatement compiledStatement : compiledStatements) {
-            this.terminalConvert = new IntTerminalConvert(compiledStatement);
+        for (StatementsList statementsList : searchStatementsList) {
+            this.terminalValueLists = new Permutations(statementsList);
             System.out.println("\n USED VARIABLES: ");
-            ArrayList<String> temp = compiledStatement.getUsedVariables();
+            ArrayList<String> temp = statementsList.getUsedVariables();
             for (String variable : temp) {
                 System.out.println(variable);
             }
             System.out.println("-----------------------------------------------------");
-            // need to pass compiledStatement into decisiontree as rawStatement?
+            // need to pass statementsList into statementStruct as rawStatement?
             generateReturnStatement(); //
-            //need to add the newRawStatement to terminalConvert
-            RawStatement newRawStatement;
+            //need to add the newRawStatement to terminalValueLists
+            StatementsList newRawStatement;
+            //For each statementType
             for (String statement : statements) {
-                newRawStatement = new RawStatement(compiledStatement); //resets toAppendString
-                terminalConvert.assignNewRawStatement(newRawStatement);
+                newRawStatement = new StatementsList(statementsList); //resets toAppendString
+                terminalValueLists.assignNewRawStatement(newRawStatement);
                 //return/break if found?
                 System.out.println("STATEMENT: " + statement);
-                ArrayList<ArrayList<String>> recurse = new ArrayList<>(); //stores terminalConvert
-                ArrayList<String> sourceComposition = decisionTree.getTerminals(statement); //will also add usedVariables to my newRawStatement
+                ArrayList<ArrayList<String>> recurse = new ArrayList<>(); //stores terminalValueLists
+                ArrayList<String> sourceComposition = statementStruct.getTerminals(statement); //will also add usedVariables to my newRawStatement
                 for (String terminal : sourceComposition) {
                     System.out.println("TERMINAL: " + terminal);
-                    recurse.add(terminalConvert.getFromTerminal(terminal)); //when new identifiers are asked for in declaration we add use variable to the current/new statement
+                    recurse.add(terminalValueLists.getFromTerminal(terminal)); //when new identifiers are asked for in declaration we add use variable to the current/new statement
                 }
                 System.out.println("----------GENERATING PERMUTATIONS OF STATEMENTS----------");
                 noTotalStatementCompiled += noNewStatementGenerated;
                 noNewStatementGenerated = 0;
                 recurseGenerateStatement(newRawStatement, "", recurse, 0);
 
-                if (!passedStatements.isEmpty()) {
+                if (!passedStatementsList.isEmpty()) {
                     break;
                 }
             }
-            if (!passedStatements.isEmpty()) {
+            if (!passedStatementsList.isEmpty()) {
                 break;
             }
         }
         System.out.println("\n----------------NEW LINE STATEMENT-----------------------");
         System.out.println("NUMBER OF GENERATED: " + noNewStatementGenerated);
-        System.out.println("NUMBER OF FAILED COMPILE: " + (noNewStatementGenerated - (newCompiledStatements.size() + passedStatements.size())));
-        System.out.println("NUMBER OF COMPILED: " + (newCompiledStatements.size() + passedStatements.size()));
+        System.out.println("NUMBER OF FAILED COMPILE: " + (noNewStatementGenerated - (compiledStatementsList.size() + passedStatementsList.size())));
+        System.out.println("NUMBER OF COMPILED: " + (compiledStatementsList.size() + passedStatementsList.size()));
         System.out.println();
 
-        noTotalStatementCompiled += newCompiledStatements.size();
-        compiledStatements = newCompiledStatements;
+        noTotalStatementCompiled += compiledStatementsList.size();
+        searchStatementsList = compiledStatementsList;
 
-        if (passedStatements.isEmpty() ) {  //or found
+        if (passedStatementsList.isEmpty() ) {  //or found
             return false;
         }
         else {
@@ -154,12 +154,12 @@ public class ProgramSearcher {
 
     /**
      * Will assume recurseList will not be empty
-     * Need to contain the compiledStatement
+     * Need to contain the statementsList
      * @param currentStatement
      * @param recurseList
      * @param position
      */
-    public void recurseGenerateStatement(RawStatement rawStatements, String statement, ArrayList<ArrayList<String>> recurseList, int position) {
+    public void recurseGenerateStatement(StatementsList rawStatements, String statement, ArrayList<ArrayList<String>> recurseList, int position) {
         for (String word : recurseList.get(position)) {
             //return if found??
             String newStatement = statement + " " + word;
@@ -177,13 +177,13 @@ public class ProgramSearcher {
                     int test = testString(testStatement);
     
                     if (test == 0) {
-                        RawStatement newRawStatement = new RawStatement(rawStatements);
+                        StatementsList newRawStatement = new StatementsList(rawStatements);
                         newRawStatement.update(newStatement);
-                        newCompiledStatements.add(newRawStatement);
+                        compiledStatementsList.add(newRawStatement);
                         System.out.println("COMPILED");
                     }
                     else if (test == 1) {
-                        passedStatements.add(testStatement);
+                        passedStatementsList.add(testStatement);
                         System.out.println("FOUND");
 
                         break;  //removable
@@ -195,7 +195,7 @@ public class ProgramSearcher {
                 }
             }
 
-            if (!passedStatements.isEmpty()) {  //or found
+            if (!passedStatementsList.isEmpty()) {  //or found
                 break;
             }
         }
@@ -205,7 +205,7 @@ public class ProgramSearcher {
     /**
      * Assumes 
      * Uses rawStatement to figure out available variables/identifiers to return
-     * Uses a already initiated terminalConvert
+     * Uses a already initiated terminalValueLists
      */
     public void generateReturnStatement() {
         returnPermutations.clear();
@@ -213,7 +213,7 @@ public class ProgramSearcher {
         for (String terminal : returnComposition) {
             System.out.println("TERMINAL: " + terminal);
             // if terminal add rawStatemnet's identifier ArrayList
-            recurse.add(terminalConvert.getFromTerminal(terminal));
+            recurse.add(terminalValueLists.getFromTerminal(terminal));
         }
         System.out.println("----------GENERATING RETURN STATEMENT PERMUTATIONS----------");
         returnPermutations.addAll(recurseGenerateReturnStatement("", recurse, 0));

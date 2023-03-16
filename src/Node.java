@@ -1,6 +1,6 @@
 package src;
 
-import src.generator.ProgramSearcher;
+import src.generator.Generator;
 import src.generator.RawStatement;
 
 import java.rmi.registry.Registry;
@@ -10,7 +10,6 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
@@ -20,7 +19,7 @@ public class Node implements NodeInterface{
     private String nname;
     private String url;
     private int ID;
-    private ProgramSearcher programSearcher;
+    private Generator generator;
 
     public boolean nodeReady;
     public boolean startSearch;
@@ -28,7 +27,7 @@ public class Node implements NodeInterface{
     Node(String name, int ID) {
         this.nname = name;
         this.ID = ID;
-        this.programSearcher = new ProgramSearcher();
+        this.generator = new Generator();
         this.startSearch = false;
         this.nodeReady = false;
     }
@@ -41,8 +40,8 @@ public class Node implements NodeInterface{
         this.url = url;
     }
 
-    public ProgramSearcher getProgramSearcher() {
-        return this.programSearcher;
+    public Generator getGenerator() {
+        return this.generator;
     }
 
     /**
@@ -52,7 +51,7 @@ public class Node implements NodeInterface{
         this.checkAllLive();
         ArrayList<NodeInterface> nodesList = getAllNodes();
 
-        ArrayList<RawStatement> compiledStatements = this.programSearcher.getCompiledStatements();
+        ArrayList<RawStatement> compiledStatements = this.generator.getCompiledStatements();
         System.out.println();
         System.out.println("NumberStatements: " + compiledStatements.size());
         System.out.println("NumberNodes: " + nodesList.size());
@@ -244,7 +243,7 @@ public class Node implements NodeInterface{
             n.nodeReady = false;
             n.startSearch = false;
 
-            String program = n.getProgramSearcher().startSearch(); //return results send to frontend
+            String program = n.getGenerator().startSearch(); //return results send to frontend
 
             System.out.println(program);
 
@@ -269,13 +268,13 @@ public class Node implements NodeInterface{
 
     @Override
     public void receieveCompiledStatements(ArrayList<RawStatement> rawStatementList) throws RemoteException {
-        getProgramSearcher().setCompiledStatements(rawStatementList);
+        getGenerator().setCompiledStatements(rawStatementList);
     }
 
     @Override
     public void addCompiledStatement(RawStatement rawStatement) throws RemoteException {
         //System.out.println(rawStatement.get()); //USEFUL
-        getProgramSearcher().addToCompiledStatement(rawStatement);
+        getGenerator().addToCompiledStatement(rawStatement);
     }
 
     @Override
@@ -296,8 +295,8 @@ public class Node implements NodeInterface{
 
     @Override
     public void mainInitSearch() throws RemoteException {
-        this.getProgramSearcher().addToCompiledStatement(new RawStatement());
-        this.getProgramSearcher().searchNewLine();
+        this.getGenerator().addToCompiledStatement(new RawStatement());
+        this.getGenerator().searchNewLine();
 
         this.checkAllLive();
         this.setAllCompiledStatementsList(); //give everyone their compiled statement
@@ -307,6 +306,6 @@ public class Node implements NodeInterface{
 
     @Override
     public void addIOExamples(Integer input, Integer output) {
-        getProgramSearcher().addIO(input, output);
+        getGenerator().addIO(input, output);
     }
 }
