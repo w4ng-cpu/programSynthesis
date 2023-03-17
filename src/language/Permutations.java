@@ -36,15 +36,6 @@ public class Permutations {
 
     /**
      * Constructor for Permutations
-     * SHOULD NOT BE USED
-     * @param currentStatementsList
-     */
-    public Permutations(StatementsList currentStatementsList) {
-        this.currentStatementsList = currentStatementsList;
-    }
-
-    /**
-     * Constructor for Permutations
      * Creates an empty StatementsList
      * @param currentStatementsList
      */
@@ -54,11 +45,13 @@ public class Permutations {
     }
 
     /**
-     * 
+     * Assigning currentStatementsList will make newStatementsList null
+     * So call this before assignin newStatementsList
      * @param currentStatementsList
      */
     public void assignCurrentStatementsList(StatementsList currentStatementsList) {
         this.currentStatementsList = currentStatementsList;
+        this.newStatementsList = null;
         refreshVarLists();
     }
 
@@ -125,7 +118,6 @@ public class Permutations {
                 listOfTerminal = new ArrayList<>(typeList);
                 break;
             case "new_variable":
-                newStatementsList.getDeclaredVariables().addAll(newVariableList);  //for 
                 listOfTerminal = new ArrayList<>(newVariableList);
                 break;
             case "assign_variable":
@@ -222,8 +214,7 @@ public class Permutations {
      */
     private void addVariableList() {
         variableList.add("a");
-        variableList.add("b");
-        variableList.addAll(currentStatementsList.getDeclaredVariables());
+        variableList.addAll(currentStatementsList.getUsedVariables());
     }
 
     /**
@@ -277,8 +268,7 @@ public class Permutations {
         varLit1List.add("9");
         varLit1List.add("10");
         varLit1List.add("a");
-        varLit1List.add("b");
-        varLit1List.addAll(currentStatementsList.getDeclaredVariables());
+        varLit1List.addAll(currentStatementsList.getUsedVariables());
     }
 
     /**
@@ -313,8 +303,7 @@ public class Permutations {
         varLit3List.add("9");
         varLit3List.add("10");
         varLit3List.add("a");
-        varLit3List.add("b");
-        varLit3List.addAll(currentStatementsList.getDeclaredVariables());
+        varLit3List.addAll(currentStatementsList.getUsedVariables());
     }
 
     /**
@@ -332,8 +321,7 @@ public class Permutations {
         varLit4List.add("9");
         varLit4List.add("10");
         varLit4List.add("a");
-        varLit4List.add("b");
-        varLit4List.addAll(currentStatementsList.getDeclaredVariables());
+        varLit4List.addAll(currentStatementsList.getUsedVariables());
     }
 
     private void addTerminator() {

@@ -1,27 +1,40 @@
 package src.generator;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class StatementsList implements java.io.Serializable{
 
-    String statements;
-    ArrayList<String> declaredVariables;
-
-    String toAppendString = "";
+    private String statementsString;
+    private ArrayList<String> declaredVariables;    //to avoid identifier not found
+    private HashSet<String> usedVariables;          //to avoid null variable
+    private HashSet<String> interactedWithA;        //to avoid useless return
+    
 
     public StatementsList() {
-        this.statements = "";
+        this.statementsString = "";
         this.declaredVariables = new ArrayList<>();
+        this.usedVariables = new HashSet<>();
+        this.interactedWithA = new HashSet<>();
     }
 
     public StatementsList(String statements) {
-        this.statements = statements;
+        this.statementsString = statements;
         this.declaredVariables = new ArrayList<>();
+        this.usedVariables = new HashSet<>();
+        this.interactedWithA = new HashSet<>();
     }
 
+    /**
+     * Related to optimisaion, used in generating declaration StatementsList
+     * @param statements
+     * @param declaredVariables
+     */
     public StatementsList(String statements, ArrayList<String> declaredVariables) {
-        this.statements = statements;
+        this.statementsString = statements;
         this.declaredVariables = new ArrayList<>(declaredVariables);
+        this.usedVariables = new HashSet<>();
+        this.interactedWithA = new HashSet<>();
     }
 
     /**
@@ -29,33 +42,39 @@ public class StatementsList implements java.io.Serializable{
      * @param copy
      */
     public StatementsList(StatementsList copy) {
-        this.statements = new String(copy.get());
+        this.statementsString = new String(copy.getStatementsString());
         this.declaredVariables = new ArrayList<>(copy.getDeclaredVariables());
-    }
-
-
-    public void appendString(String append) {
-        toAppendString += append;
-    }
-
-    public String getAppendString() {
-        return toAppendString;
-    }
-
-
-    public String get() {
-        return this.statements;
-    }
-
-    public void update(String newStatements) {
-        this.statements = newStatements;
+        this.usedVariables = new HashSet<>(copy.getUsedVariables());
+        this.interactedWithA = new HashSet<>();// TODO
     }
 
     /**
-     * Permutation fetches declared variables
+     * Appends string to statementsList, string should be a statement
+     * @param append
+     */
+    public void appendString(String append) {
+        statementsString += append;
+    }
+
+    public String getStatementsString() {
+        return statementsString;
+    }
+
+    /**
+     * Permutation fetches declared variables for assignment variable values
+     * StatementLists fetches to copy
      * @return
      */
     public ArrayList<String> getDeclaredVariables() {
         return this.declaredVariables;
+    }
+
+    /**
+     * Permutation fetches used variables for variable values
+     * StatementLists fetches to copy
+     * @return
+     */
+    public HashSet<String> getUsedVariables() {
+        return this.usedVariables;
     }
 }

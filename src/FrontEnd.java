@@ -169,6 +169,36 @@ public class FrontEnd implements FrontInterface {
         }
     }
 
+    /**
+     * Checks if node is alive, 
+     */
+    public void checkAllLive() {
+        ArrayList<String> itr = getNodeRegistry();
+
+        try {
+            Registry registry = LocateRegistry.getRegistry();
+            for (String name : itr) {
+                try { 
+                    NodeInterface node = (NodeInterface) registry.lookup(name);
+                    node.doNothing();
+                    //System.out.println(node + ": Found");
+                } catch (Exception e) {
+                    System.out.println(name + ": Remote Exception, Removing");
+
+                    try {
+                        registry.unbind(name);
+                    } catch (NotBoundException e1) {
+                        System.out.println("Failed to unbind " + name);
+                        e1.printStackTrace();
+                    }
+                }
+            }
+        } catch (RemoteException e1) {
+            System.out.println("Failed to get registry");
+            e1.printStackTrace();
+        };      
+    }
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
