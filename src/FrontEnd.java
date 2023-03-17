@@ -1,5 +1,6 @@
 package src;
 
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -12,7 +13,7 @@ import java.io.InputStreamReader;
 
 public class FrontEnd implements FrontInterface {
 
-    private NodeInterface mainNode;
+    private ArrayList<NodeInterface> nodesList;
 
     public FrontEnd() {
 
@@ -50,6 +51,8 @@ public class FrontEnd implements FrontInterface {
     }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  THESE ARE TERMINAL INTERFACE COMMANDS
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public void processInput(String inputString) {
         System.out.println("===============================================");
@@ -64,11 +67,8 @@ public class FrontEnd implements FrontInterface {
             case "listNodes":
                 listNodes();
                 break;
-            case "chooseMainNode":
-                chooseMainNode();
-                break;
-            case "startMainNodeSearch":
-                mainInitSearch();
+            case "startNodeSearch":
+                startSearch();
                 break;
             case "addIOExample":
                 try {
@@ -88,12 +88,13 @@ public class FrontEnd implements FrontInterface {
     public void displayHelp() {
         System.out.println("listRegistry");
         System.out.println("listNodes");
-        System.out.println("chooseMainNode");
-        System.out.println("startMainNodeSearch");
+        System.out.println("startNodeSearch");
         System.out.println("addIOExample [input] [output]");
     }
 
     public void listNodes() {
+        checkAllLive();
+
         ArrayList<String> itr = getNodeList();
         System.out.println("NODE LIST:");
         
@@ -110,38 +111,40 @@ public class FrontEnd implements FrontInterface {
     }
 
     /**
-     * Assigns the first node found to be main node
+     * Assign initial search space to nodes
+     * Assumes we already acquired the nodes
      */
-    public void chooseMainNode() {
-        ArrayList<String> itr = getNodeList();
+    private void distributeInitialSearch() {
 
-        for (String name : itr) {
+        int noNodes = nodesList.size();
+        for (int i = 0; i < noNodes; i++) {
+            NodeInterface node = nodesList.get(i);
+            
             try {
-                Registry registry = LocateRegistry.getRegistry();
-                mainNode = (NodeInterface) registry.lookup(name);
-                System.out.println(name);
-                break;
-            } catch (Exception e) {
-                System.err.println("Exception:");
+                node.startSearch(i, noNodes);
+            } catch (RemoteException e) {
+                System.out.println("SEVERE ERROR, SEARCH RESET REQUIRED");
                 e.printStackTrace();
             }
         }
     }
 
-    public void mainInitSearch() {
-        if (mainNode == null) {
-            System.out.println("Must choose a main node to start");
+    /**
+     * Starts the search in each node, also does distribution
+     */
+    public void startSearch() {
+        getAllNodes();
+
+        if (nodesList.isEmpty()) {
+            System.out.println("Must add Nodes");
             return;
         }
 
-        System.out.println("Main node initialising search space. This will take a few seconds");
+        System.out.println("Starting searches");
         long start = System.currentTimeMillis();
-        try {
-            mainNode.mainInitSearch();
-        } catch (RemoteException e) {
-            System.out.println("Remote Exception : Try choosing another mainNode");
-            e.printStackTrace();
-        }
+
+        distributeInitialSearch();  //this starts the searches
+
 
         System.out.println("Finished initialising: Taken " + (System.currentTimeMillis() - start) + "ms\nStarted search");
     }
@@ -170,10 +173,11 @@ public class FrontEnd implements FrontInterface {
     }
 
     /**
-     * Checks if node is alive, 
+     * Checks if all nodes binded are alive, 
      */
-    public void checkAllLive() {
-        ArrayList<String> itr = getNodeRegistry();
+    public boolean checkAllLive() {
+        ArrayList<String> itr = getNodeList();
+        boolean statusNoChange = true;
 
         try {
             Registry registry = LocateRegistry.getRegistry();
@@ -181,10 +185,10 @@ public class FrontEnd implements FrontInterface {
                 try { 
                     NodeInterface node = (NodeInterface) registry.lookup(name);
                     node.doNothing();
-                    //System.out.println(node + ": Found");
+                    //System.out.println(node + ": Found");     //DEBUG
                 } catch (Exception e) {
                     System.out.println(name + ": Remote Exception, Removing");
-
+                    statusNoChange = false;
                     try {
                         registry.unbind(name);
                     } catch (NotBoundException e1) {
@@ -196,7 +200,9 @@ public class FrontEnd implements FrontInterface {
         } catch (RemoteException e1) {
             System.out.println("Failed to get registry");
             e1.printStackTrace();
-        };      
+        };
+
+        return statusNoChange;
     }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -219,6 +225,10 @@ public class FrontEnd implements FrontInterface {
         return regList;
     }
 
+    /**
+     * Get specifically names of Nodes
+     * @return
+     */
     private ArrayList<String> getNodeList() {
         Iterator<String> itr = getRegistryList().iterator();
         ArrayList<String> nodesList = new ArrayList<>();
@@ -231,6 +241,28 @@ public class FrontEnd implements FrontInterface {
         }
 
         return nodesList;
+    }
+
+    /**
+     * We acquire all nodes
+     */
+    public void getAllNodes() {
+        checkAllLive();
+        ArrayList<String> itr = getNodeList();
+        nodesList = new ArrayList<>();
+        for (String nodeName : itr) {
+            NodeInterface node;
+            try {
+                Registry registry = LocateRegistry.getRegistry();
+                System.out.println("ADDING: " + nodeName);   //DEBUG
+                node = (NodeInterface) registry.lookup(nodeName);
+                nodesList.add(node);
+                System.out.println("ADDED: " + nodeName);   //DEBUG
+            } catch (Exception e) {
+                System.err.println("Exception:");
+                e.printStackTrace();
+            }
+        }
     }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
