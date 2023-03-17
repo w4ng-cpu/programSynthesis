@@ -1,7 +1,7 @@
 package src;
 
 import src.generator.Generator;
-import src.generator.RawStatement;
+import src.generator.StatementsList;
 
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
@@ -13,111 +13,122 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.naming.InitialContext;
+
 
 
 public class Node implements NodeInterface{
-    private String nname;
-    private String url;
-    private int ID;
+    private String nodeName;
     private Generator generator;
 
     public boolean nodeReady;
     public boolean startSearch;
+    public boolean immediateStop;
+    public boolean finishLineStop;
+    public boolean lineFinished;
 
-    Node(String name, int ID) {
-        this.nname = name;
-        this.ID = ID;
-        this.generator = new Generator();
+    public int currentLine;
+    public int currentPosition;         //current position in currentSubSearchSpace
+    public int startPosition;
+    public int noNodes;
+
+    public ArrayList<StatementsList> nextSubSearchSpace;
+    public ArrayList<StatementsList> currentSubSearchSpace;
+
+    Node(String name) {
+        this.nodeName = name;
+        this.generator = new Generator(this);
         this.startSearch = false;
         this.nodeReady = false;
+        this.immediateStop = false;
+        this.finishLineStop = false;
+        this.lineFinished = false;
     }
 
     public String getName() {
-        return this.nname;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
+        return this.nodeName;
     }
 
     public Generator getGenerator() {
         return this.generator;
     }
 
+    public void init() {
+        currentLine = 1;
+        nextSubSearchSpace = new ArrayList<>();
+        currentSubSearchSpace = new ArrayList<>();
+    }
+
     /**
-     * divides up program searcher's compiled statements and send them to each node 
+     * Fetches and removes n number of statementsList from currentSubSearchSpace
+     * Fetches from the end of the currentSubSearchSpace
+     * Called by other Nodes TODO
+     * @return
      */
-    public void setAllCompiledStatementsList() {
-        this.checkAllLive();
-        ArrayList<NodeInterface> nodesList = getAllNodes();
-
-        ArrayList<RawStatement> compiledStatements = this.generator.getCompiledStatements();
-        System.out.println();
-        System.out.println("NumberStatements: " + compiledStatements.size());
-        System.out.println("NumberNodes: " + nodesList.size());
-
-        int dividedUp = compiledStatements.size() / nodesList.size();
-        int remain = compiledStatements.size() % nodesList.size();
-        int start = 0;
-
-        //System.out.println("DividedUpInto: " + dividedUp);
-        //System.out.println("Remainder: " + remain);
-
-        for (NodeInterface node : nodesList) {
-            int end = start + dividedUp;
-            if (remain > 0) {
-                end += 1;
-                remain--;
-            }
-            // System.out.println("Start: " + start);
-            // System.out.println("End: " + end);
-            List<RawStatement> setOfCompiledStatements = compiledStatements.subList(start, end);
-            //System.out.println(setOfCompiledStatements.size());
-
-            try {
-                for (RawStatement rawStatement : setOfCompiledStatements) {
-                    node.addCompiledStatement(rawStatement);
-                }
-
-                node.startSearch();
-
-            } catch (RemoteException e) {
-                System.out.println("Remote Exception");
-                e.printStackTrace();
-            }
-            
-            start = end;
+    public synchronized ArrayList<StatementsList> popStatementsList(int number) {
+        ArrayList<StatementsList> returnStatementsList = new ArrayList<>();
+        int startIndex = currentSubSearchSpace.size() - number - 1;
+        for (int i = currentSubSearchSpace.size() - 1; i > startIndex; i--) {
+            returnStatementsList.add(currentSubSearchSpace.get(i));
+            currentSubSearchSpace.remove(i);
         }
+        return returnStatementsList;
     }
 
-    public void checkAllLive() {
-        ArrayList<String> itr = getNodeRegistry();
-
-        try {
-            Registry registry = LocateRegistry.getRegistry();
-            for (String name : itr) {
-                try { 
-                    NodeInterface node = (NodeInterface) registry.lookup(name);
-                    node.doNothing();
-                    //System.out.println(node + ": Found");
-                } catch (Exception e) {
-                    System.out.println(name + ": Remote Exception, Removing");
-
-                    try {
-                        registry.unbind(name);
-                    } catch (NotBoundException e1) {
-                        System.out.println("Failed to unbind " + name);
-                        e1.printStackTrace();
-                    }
-                }
-            }
-        } catch (RemoteException e1) {
-            System.out.println("Failed to get registry");
-            e1.printStackTrace();
-        };      
+    /**
+     * Fetches last statementsList from currentSubSearchSpace
+     * Called by other Nodes
+     * @return
+     */
+    public synchronized StatementsList popLastStatementsList() {
+        int last = currentSubSearchSpace.size() - 1;
+        StatementsList lastStatementsList = currentSubSearchSpace.get(last);
+        currentSubSearchSpace.remove(last);
+        return lastStatementsList;
     }
 
-    public ArrayList<String> getNodeRegistry() {
+    /**
+     * Fetches a statementList at a specific position
+     * @return
+     */
+    public synchronized StatementsList getStatementsList(int index) {
+        StatementsList lastStatementsList = currentSubSearchSpace.get(index);
+        return lastStatementsList;
+    }
+
+    /**
+     * Adds ArrayList<StatementsList> to currentSubSearchSpace
+     * @return
+     */
+    public synchronized void addAllStatementsList(ArrayList<StatementsList> collection) {
+        currentSubSearchSpace.addAll(collection);
+    }
+
+    /**
+     * Adds One StatementsList to currentSubSearchSpace
+     * @return
+     */
+    public synchronized void addStatementsList(StatementsList statementsList) {
+        currentSubSearchSpace.add(statementsList);
+    }
+
+    /**
+     * Adds ArrayList<StatementsList> to nextSubSearchSpace
+     * @return
+     */
+    public synchronized void addAllNextSearchSpace(ArrayList<StatementsList> collection) {
+        nextSubSearchSpace.addAll(collection);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Get all names in registry
+     * @return
+     */
+    public ArrayList<String> getAllRegistry() {
         ArrayList<String> regNodeList = new ArrayList<String>();
 
         try {
@@ -128,8 +139,16 @@ public class Node implements NodeInterface{
             e.printStackTrace();
         }
 
-        Iterator<String> itr = regNodeList.iterator();
-        regNodeList = new ArrayList<String>();
+        return regNodeList;
+    }
+
+    /**
+     * Get name of nodes in registry
+     * @return
+     */
+    public ArrayList<String> getNodeRegistry() {
+        Iterator<String> itr = getAllRegistry().iterator();
+        ArrayList<String> regNodeList = new ArrayList<String>();
 
         while (itr.hasNext()) {
             String name = itr.next();
@@ -141,6 +160,10 @@ public class Node implements NodeInterface{
         return regNodeList;
     }
 
+    /**
+     * Acquire all nodes in registry
+     * @return
+     */
     public ArrayList<NodeInterface> getAllNodes() {
         ArrayList<NodeInterface> nodesList = new ArrayList<>();
         ArrayList<String> itr = getNodeRegistry();
@@ -164,32 +187,16 @@ public class Node implements NodeInterface{
         return nodesList;
     }
 
+    /**
+     * Get front end
+     * @return
+     */
     public FrontInterface getFrontInterface() {
-        ArrayList<String> regNodeList = new ArrayList<String>();
-        String tempName = null;
         FrontInterface frontEnd = null;
-        Registry registry;
-        try {
-            registry = LocateRegistry.getRegistry();
-            Collections.addAll(regNodeList, registry.list());
-        } catch (Exception e) {
-            System.err.println("Exception:");
-            e.printStackTrace();
-            return null;
-        }
-
-        Iterator<String> itr = regNodeList.iterator();
-        regNodeList = new ArrayList<String>();
-
-        while (itr.hasNext()) {
-            String name = itr.next();
-            if (name.contains("Controller")) {
-                tempName = name;
-            }
-        }
 
         try {
-            frontEnd = (FrontInterface) registry.lookup(tempName);
+            Registry registry = LocateRegistry.getRegistry();
+            frontEnd = (FrontInterface) registry.lookup("Controller");
         } catch (Exception e) {
             System.err.println("Exception: FrontEnd not found");
             e.printStackTrace();
@@ -200,10 +207,29 @@ public class Node implements NodeInterface{
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+     * Part of optimisaion 5.0 to avoid converge of declaration statements
+     * Generates up to limit of 24 variables
+     */
+    public void generateNewVariableStatementsList() {
+        StatementsList declaredStatementsList = new StatementsList();
+        for (int i = 0; i < currentLine; i++) {
+            
+            if (i < 24) {
+                char newASCII = (char) (99 + i);                   //char 99 is c
+                String newVariable = Character.toString(newASCII);
+                declaredStatementsList.appendString("\nInteger " + newVariable + " ;");
+                declaredStatementsList.getDeclaredVariables().add(newVariable);
+            }
+        }
+        System.out.println(declaredStatementsList.getStatementsString());
+        addStatementsList(declaredStatementsList);
+    }
+
+
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public static void main(String args[]) {
-
         int number;
         try {
             number = Integer.parseInt(args[0]);
@@ -212,14 +238,13 @@ public class Node implements NodeInterface{
             return;
         }
 
-        Node n = new Node("Node" + number, number);
+        Node n = new Node("Node" + number);
         
         try {
-            //need to locate the registry that the controller is on
             NodeInterface stub = (NodeInterface) UnicastRemoteObject.exportObject(n, 0);
             Registry registry = LocateRegistry.getRegistry();
             String url = "rmi://localhost:1099/" + n.getName();
-            n.setUrl(url);
+            //n.setUrl(url);
             registry.bind(url, stub);
             System.out.println("Server ready: " + n.getName());
         } catch (Exception e) {
@@ -228,8 +253,8 @@ public class Node implements NodeInterface{
             return;
         }
 
-
         while(true) {
+            n.init();
             System.out.println("Node Ready!");
             n.nodeReady = true;
             while(n.startSearch == false) {
@@ -243,16 +268,40 @@ public class Node implements NodeInterface{
             n.nodeReady = false;
             n.startSearch = false;
 
-            String program = n.getGenerator().startSearch(); //return results send to frontend
+            //split up search space
 
-            System.out.println(program);
 
-            try {
-                n.getFrontInterface().foundProgram(program);
-            } catch (RemoteException e) {
-                System.out.println("Remote Exception");
-                e.printStackTrace();
+            ArrayList<StatementsList> permuStatementsList = n.getGenerator().initialSearch(n.startPosition, n.noNodes);
+            n.addAllStatementsList(permuStatementsList);
+            
+            
+            while(!n.immediateStop || !(n.finishLineStop)) {
+
+                //distribute, calculate permutations for next line, send calculation to frontend, frontend distributes
+
+                
+                for(n.currentPosition = 0; n.currentPosition < n.currentSubSearchSpace.size(); n.currentPosition++) {
+                    permuStatementsList = n.getGenerator().searchNewLine(n.getStatementsList(n.currentPosition));
+                    n.addAllNextSearchSpace(permuStatementsList);
+                }
+
+                //until everyone is done with subSearchSpace, ask FrontEnd who isnt finished take search space from those who have the most left permutations left
+
+
+                //setup next subSearchSpace
+                n.currentLine += 1;
+
+                n.currentSubSearchSpace = new ArrayList<>();    //cearling currentSubSearchSpace
+                if (n.startPosition == 0) { //if startnumber = 0 generate declare stastements and add to front of subSearchSpace
+                    n.generateNewVariableStatementsList();
+                }
+
+                n.addAllStatementsList(n.nextSubSearchSpace);     //adding generated StatementsList to subSearchSpace
+                n.nextSubSearchSpace = new ArrayList<>();       //clearing nextSubSearchSpace
+                
             }
+
+            //print out overall results
         }
     }
 
@@ -266,26 +315,22 @@ public class Node implements NodeInterface{
 
     }
 
-    @Override
-    public void receieveCompiledStatements(ArrayList<RawStatement> rawStatementList) throws RemoteException {
-        getGenerator().setCompiledStatements(rawStatementList);
-    }
 
     @Override
-    public void addCompiledStatement(RawStatement rawStatement) throws RemoteException {
-        //System.out.println(rawStatement.get()); //USEFUL
-        getGenerator().addToCompiledStatement(rawStatement);
-    }
-
-    @Override
-    public void startSearch() {
-        //System.out.println("Starting search with current compiled statements");
+    public void startSearch(int startPosition, int noNodes) throws RemoteException{
+        this.startPosition = startPosition;
+        this.noNodes = noNodes;
         this.startSearch = true;
     }
 
     @Override
-    public int getID() {
-        return this.ID;
+    public void receieveCompiledStatements(ArrayList<StatementsList> statementsList) throws RemoteException {
+        
+    }
+
+    @Override
+    public void addCompiledStatement(StatementsList statementsList) throws RemoteException {
+        //System.out.println(rawStatement.get()); //USEFUL
     }
 
     @Override
@@ -293,19 +338,9 @@ public class Node implements NodeInterface{
         return this.nodeReady;
     }
 
-    @Override
-    public void mainInitSearch() throws RemoteException {
-        this.getGenerator().addToCompiledStatement(new RawStatement());
-        this.getGenerator().searchNewLine();
-
-        this.checkAllLive();
-        this.setAllCompiledStatementsList(); //give everyone their compiled statement
-
-        this.startSearch();
-    }
 
     @Override
     public void addIOExamples(Integer input, Integer output) {
-        getGenerator().addIO(input, output);
+        //getGenerator().addIO(input, output);
     }
 }

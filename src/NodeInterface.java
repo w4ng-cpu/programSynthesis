@@ -9,7 +9,7 @@ public interface NodeInterface extends Remote {
 
     public void doNothing() throws RemoteException;
 
-    public void startInitial(int start, int skip) throws RemoteException;
+    public void startSearch(int startPosition, int noNodes) throws RemoteException;
 
     public void receieveCompiledStatements(ArrayList<StatementsList> statement) throws RemoteException;
 
