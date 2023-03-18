@@ -88,10 +88,11 @@ public class Generator {
         terminalValueLists.assignCurrentStatementsList(currentStatementsList);     //Permutations now acquired used variables
 
         //SECTION IS FOR DEBUG
-        //System.out.println("\nDEBUG: DECLARED VARIABLES: ");
+        System.out.println("\nDEBUG: USED VARIABLES: ");
         ArrayList<String> temp = currentStatementsList.getDeclaredVariables();
         for (String variable : temp) {
             System.out.println(variable);
+            printLinebreak();
         }
 
         this.initialStart = start;
@@ -100,15 +101,15 @@ public class Generator {
 
         //generate permutations for add, sub, times, divide statments
         for (String statementType: statementStructList) {   
-            //System.out.println("\nDEBUG STRUCT: " + statementType);     //DEBUG
+            System.out.println("\nDEBUG STRUCT: " + statementType);     //DEBUG
 
             recurseList = new ArrayList<>(); 
             ArrayList<String> statementTerminals = statementStruct.getStatementStruct(statementType);
             for (String statementTerminal : statementTerminals) {
-                //System.out.println("TERMINAL: " + statementTerminal);   //DEBUG
+                System.out.println("TERMINAL: " + statementTerminal);   //DEBUG
                 recurseList.add(terminalValueLists.getFromTerminal(statementTerminal));
             }
-            //printLinebreak();
+            printLinebreak();
             
             generatedStatement = new ArrayList<String>(statementTerminals);   //used to keep track of what to return
 
@@ -118,10 +119,10 @@ public class Generator {
         //generate permutations for unproductive times statements
         recurseList = new ArrayList<>();
         for (String statementTerminal : times1Structure) {
-            //System.out.println("TERMINAL: " + statementTerminal);   //DEBUG
+            System.out.println("TERMINAL: " + statementTerminal);   //DEBUG
             recurseList.add(terminalValueLists.getFromTerminal(statementTerminal));
         }
-        //printLinebreak();
+        printLinebreak();
 
         generatedStatement = new ArrayList<String>(times1Structure);   //used to keep track of what to return
         recurseGeneratWithoutReturnInit(0);
@@ -144,28 +145,29 @@ public class Generator {
     public ArrayList<StatementsList> searchNewLine(StatementsList statementsList) {
         startTime = System.currentTimeMillis();
         reset();
-        //System.out.println("currentStatement: \n" + statementsList.getStatementsString());
+
         terminalValueLists.assignCurrentStatementsList(statementsList);     //Permutations now acquired used variables
         currentStatementsList = statementsList;
 
         //SECTION IS FOR DEBUG
-        System.out.println("\nDEBUG: DECLARED VARIABLES: ");
+        System.out.println("\nDEBUG: USED VARIABLES: ");
         ArrayList<String> temp = currentStatementsList.getDeclaredVariables();
         for (String variable : temp) {
             System.out.println(variable);
+            printLinebreak();
         }
 
         //generate permutations for add, sub, times, divide statments
         for (String statementType: statementStructList) {   
-            //System.out.println("\nDEBUG STRUCT: " + statementType);     //DEBUG
+            System.out.println("\nDEBUG STRUCT: " + statementType);     //DEBUG
 
             recurseList = new ArrayList<>(); 
             ArrayList<String> statementTerminals = statementStruct.getStatementStruct(statementType);
             for (String statementTerminal : statementTerminals) {
-                //System.out.println("TERMINAL: " + statementTerminal);   //DEBUG
+                System.out.println("TERMINAL: " + statementTerminal);   //DEBUG
                 recurseList.add(terminalValueLists.getFromTerminal(statementTerminal));
             }
-            //printLinebreak();
+            printLinebreak();
 
             generatedStatement = new ArrayList<String>(statementTerminals);   //used to keep track of what to return
             recurseGenerateWithReturn(0);
@@ -174,10 +176,10 @@ public class Generator {
         //generate permutations for unproductive times statements
         recurseList = new ArrayList<>();
         for (String statementTerminal : times1Structure) {
-            //System.out.println("TERMINAL: " + statementTerminal);   //DEBUG
+            System.out.println("TERMINAL: " + statementTerminal);   //DEBUG
             recurseList.add(terminalValueLists.getFromTerminal(statementTerminal));
         }
-        //printLinebreak();
+        printLinebreak();
 
         generatedStatement = new ArrayList<String>(times1Structure);   //used to keep track of what to return
         recurseGeneratWithoutReturn(0);
@@ -210,7 +212,7 @@ public class Generator {
 
                 //for each loop on declared variable here if wanted to avoid optimisation
                 String program = sourceCreator.pack(newStatementsList, generatedStatement.get(0));
-                //System.out.println(newStatementsList);
+                System.out.println(newStatementsList);
 
                 //compile program
                 
@@ -240,7 +242,7 @@ public class Generator {
 
                 //for each loop on declared variable here if wanted to avoid optimisation
                 String program = sourceCreator.pack(newStatementsList, generatedStatement.get(0));
-                //System.out.println(newStatementsList);
+                System.out.println(newStatementsList);
 
                 //compile program
                 
@@ -276,7 +278,7 @@ public class Generator {
 
                     //for each loop on declared variable here if wanted to avoid optimisation
                     String program = sourceCreator.pack(newStatementsList, generatedStatement.get(0));
-                    //System.out.println(newStatementsList);
+                    System.out.println(newStatementsList);
 
                     //compile program
                     
@@ -310,7 +312,7 @@ public class Generator {
 
                     //for each loop on declared variable here if wanted to avoid optimisation
                     String program = sourceCreator.pack(newStatementsList, generatedStatement.get(0));
-                    //System.out.println(newStatementsList);
+                    System.out.println(newStatementsList);
 
                     //compile program
                     
