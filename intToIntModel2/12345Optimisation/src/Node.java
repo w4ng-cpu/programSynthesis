@@ -35,7 +35,7 @@ public class Node implements NodeInterface{
 
     public long startTime;
 
-    public final int MAXLINE = 1;
+    public final int MAXLINE = 2;
 
     Node(String name) {
         this.nodeName = name;
@@ -290,6 +290,7 @@ public class Node implements NodeInterface{
                 n.startTime = System.currentTimeMillis();
 
                 for(n.currentPosition = 0; n.currentPosition < n.currentSubSearchSpace.size(); n.currentPosition++) {
+                    System.out.println("Node: " + n.currentPosition + "/" + n.currentSubSearchSpace.size());
                     permuStatementsList = n.generator.searchNewLine(n.getStatementsList(n.currentPosition));
                     n.addAllNextSearchSpace(permuStatementsList);
                     n.totalStatementsGenerated += n.generator.statementsListGenerated;
