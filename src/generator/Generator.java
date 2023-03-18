@@ -12,7 +12,6 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import javax.script.CompiledScript;
 
 public class Generator {
     private Node ourNode;                           //need to send back passedStatementsList
@@ -38,17 +37,19 @@ public class Generator {
     private ArrayList<String> declareStructure;
 
     //totalStatementsList we generated per StatementLists
-    private int totalStatementsListGenerated = 0;   //total number statements we generated (and attempted to compile)
-    private int totalStatementsListCompiled = 0;    //used to calculate failed compilation
-    private int totalStatementsListDropped = 0;     //used to calculate runtime failures
+    public int statementsListGenerated;        //total number statements we generated (includes those we don't compile)
+    public int statementsListTryCompile;       //total number statements we try compile (for ones we generate return statements for)
+    public int totalStatementsListCompiled;         //used to calculate failed compilation
+    public int totalStatementsListDropped;          //used to calculate runtime failures
 
-    private long startTime;                     //time 
-    private boolean found;
+    public long startTime;                      //time 
+    public boolean found;
     
     public Generator(Node ourNode) {
         this.ourNode = ourNode;
         this.sourceCreator = new SourcePacker();
         this.statementStruct = new StatementTypes();
+        this.terminalValueLists = new Permutations();
 
         this.statementStructList = statementStruct.initStatementsArray();
         this.declareStructure = statementStruct.getStatementStruct("DECLARE");
@@ -68,20 +69,27 @@ public class Generator {
         //reset times
         //reset statementsLists
         //reset totals
+        statementsListGenerated = 0;
+        statementsListTryCompile = 0;
+        compiledStatementsList = new ArrayList<>();
     }
 
     /**
-     * Generates, compiles and tests
-     * Search all permutation for one StatementsList at a time
+     * Initial Search, Distributed Initial Search Space
+     * Assumes we are also initialising 
      * @return
      */
     public ArrayList<StatementsList> initialSearch(int start, int skip) {
-        StatementsList initialStatementsList = new StatementsList();
-        terminalValueLists.assignCurrentStatementsList(initialStatementsList);     //Permutations now acquired used variables
+        startTime = System.currentTimeMillis();
+        reset();
+
+        currentStatementsList = new StatementsList();
+        
+        terminalValueLists.assignCurrentStatementsList(currentStatementsList);     //Permutations now acquired used variables
 
         //SECTION IS FOR DEBUG
         System.out.println("\nDEBUG: USED VARIABLES: ");
-        ArrayList<String> temp = initialStatementsList.getDeclaredVariables();
+        ArrayList<String> temp = currentStatementsList.getDeclaredVariables();
         for (String variable : temp) {
             System.out.println(variable);
             printLinebreak();
@@ -102,8 +110,9 @@ public class Generator {
                 recurseList.add(terminalValueLists.getFromTerminal(statementTerminal));
             }
             printLinebreak();
+            
+            generatedStatement = new ArrayList<String>(statementTerminals);   //used to keep track of what to return
 
-            ArrayList<String> generatedStatement = new ArrayList<String>(recurseList.size());   //used to keep track of what to return
             recurseGenerateWithReturnInit(0);
         }
 
@@ -115,8 +124,14 @@ public class Generator {
         }
         printLinebreak();
 
-        ArrayList<String> generatedStatement = new ArrayList<String>(recurseList.size());   //used to keep track of what to return
+        generatedStatement = new ArrayList<String>(times1Structure);   //used to keep track of what to return
         recurseGeneratWithoutReturnInit(0);
+
+        System.out.println("\n\n________________________________________________");
+        System.out.println("Time to generate a StatementsList permutations: " + (System.currentTimeMillis() - startTime));
+        System.out.println("Number generated: " + statementsListGenerated + ":" + compiledStatementsList.size());
+        System.out.println("Number attemped to compile: " + statementsListTryCompile);
+        System.out.println("________________________________________________\n\n");
 
         return compiledStatementsList;
     }
@@ -128,11 +143,15 @@ public class Generator {
      * @return
      */
     public ArrayList<StatementsList> searchNewLine(StatementsList statementsList) {
+        startTime = System.currentTimeMillis();
+        reset();
+
         terminalValueLists.assignCurrentStatementsList(statementsList);     //Permutations now acquired used variables
+        currentStatementsList = statementsList;
 
         //SECTION IS FOR DEBUG
         System.out.println("\nDEBUG: USED VARIABLES: ");
-        ArrayList<String> temp = statementsList.getDeclaredVariables();
+        ArrayList<String> temp = currentStatementsList.getDeclaredVariables();
         for (String variable : temp) {
             System.out.println(variable);
             printLinebreak();
@@ -150,7 +169,7 @@ public class Generator {
             }
             printLinebreak();
 
-            ArrayList<String> generatedStatement = new ArrayList<String>(recurseList.size());   //used to keep track of what to return
+            generatedStatement = new ArrayList<String>(statementTerminals);   //used to keep track of what to return
             recurseGenerateWithReturn(0);
         }
 
@@ -162,8 +181,14 @@ public class Generator {
         }
         printLinebreak();
 
-        ArrayList<String> generatedStatement = new ArrayList<String>(recurseList.size());   //used to keep track of what to return
+        generatedStatement = new ArrayList<String>(times1Structure);   //used to keep track of what to return
         recurseGeneratWithoutReturn(0);
+
+        System.out.println("\n\n________________________________________________");
+        System.out.println("Time to generate a StatementsList permutations: " + (System.currentTimeMillis() - startTime));
+        System.out.println("Number generated: " + statementsListGenerated + ":" + compiledStatementsList.size());
+        System.out.println("Number attemped to compile: " + statementsListTryCompile);
+        System.out.println("________________________________________________\n\n");
 
         return compiledStatementsList;
     }
@@ -178,17 +203,23 @@ public class Generator {
                 recurseGenerateWithReturn(position + 1);
             }
             else {
+                statementsListGenerated++;
+                statementsListTryCompile++;
+
                 //return the most recently used variable, using sourcepacker
                 String newStatement = createStringStatement();
                 String newStatementsList = currentStatementsList.getStatementsString() + newStatement;  //printing debug
 
                 //for each loop on declared variable here if wanted to avoid optimisation
-                String program = sourceCreator.pack(newStatement, generatedStatement.get(0));
-                System.out.println(program);
+                String program = sourceCreator.pack(newStatementsList, generatedStatement.get(0));
+                System.out.println(newStatementsList);
+
+                //compile program
                 
                 //if results of compilation test return valid values add to ArrayList of next gen
                 newGenStatementsList = new StatementsList(currentStatementsList);
                 newGenStatementsList.appendString(newStatement);
+                newGenStatementsList.getUsedVariables().add(generatedStatement.get(0)); //adds to usedVariables
                 compiledStatementsList.add(newGenStatementsList);
                 //StatementsList variablesUsed hashmap boolean true for statement that is used as assignment
                 
@@ -200,20 +231,25 @@ public class Generator {
         for (String terminal : recurseList.get(position)) {
             generatedStatement.set(position, terminal);
             if (position < recurseList.size() - 1) {
-                recurseGenerateWithReturn(position + 1);
+                recurseGeneratWithoutReturn(position + 1);
             }
             else {
+                statementsListGenerated++;
+
                 //return the most recently used variable, using sourcepacker
                 String newStatement = createStringStatement();
                 String newStatementsList = currentStatementsList.getStatementsString() + newStatement;  //printing debug
 
                 //for each loop on declared variable here if wanted to avoid optimisation
-                String program = sourceCreator.pack(newStatement, generatedStatement.get(0));
-                System.out.println(program);        //DEBUG
+                String program = sourceCreator.pack(newStatementsList, generatedStatement.get(0));
+                System.out.println(newStatementsList);
+
+                //compile program
                 
                 //if results of compilation test return valid values add to ArrayList of next gen
                 newGenStatementsList = new StatementsList(currentStatementsList);
                 newGenStatementsList.appendString(newStatement);
+                newGenStatementsList.getUsedVariables().add(generatedStatement.get(0)); //adds to usedVariables
                 compiledStatementsList.add(newGenStatementsList);
                 //StatementsList variablesUsed hashmap boolean true for statement that is used as assignment
                 
@@ -229,21 +265,27 @@ public class Generator {
         for (String terminal : recurseList.get(position)) {
             generatedStatement.set(position, terminal);
             if (position < recurseList.size() - 1) {
-                recurseGenerateWithReturn(position + 1);
+                recurseGenerateWithReturnInit(position + 1);
             }
             else {
                 if (currentCount == initialStart) {
+                    statementsListGenerated++;
+                    statementsListTryCompile++;
+
                     //return the most recently used variable, using sourcepacker
                     String newStatement = createStringStatement();
                     String newStatementsList = currentStatementsList.getStatementsString() + newStatement;  //printing debug
 
                     //for each loop on declared variable here if wanted to avoid optimisation
-                    String program = sourceCreator.pack(newStatement, generatedStatement.get(0));
-                    System.out.println(program);
+                    String program = sourceCreator.pack(newStatementsList, generatedStatement.get(0));
+                    System.out.println(newStatementsList);
+
+                    //compile program
                     
                     //if results of compilation test return valid values add to ArrayList of next gen
                     newGenStatementsList = new StatementsList(currentStatementsList);
                     newGenStatementsList.appendString(newStatement);
+                    newGenStatementsList.getUsedVariables().add(generatedStatement.get(0)); //adds to usedVariables
                     compiledStatementsList.add(newGenStatementsList);
                     //StatementsList variablesUsed hashmap boolean true for statement that is used as assignment
                 }
@@ -258,21 +300,26 @@ public class Generator {
         for (String terminal : recurseList.get(position)) {
             generatedStatement.set(position, terminal);
             if (position < recurseList.size() - 1) {
-                recurseGenerateWithReturn(position + 1);
+                recurseGeneratWithoutReturnInit(position + 1);
             }
             else {
                 if (currentCount == initialStart) {
+                    statementsListGenerated++;
+
                     //return the most recently used variable, using sourcepacker
                     String newStatement = createStringStatement();
                     String newStatementsList = currentStatementsList.getStatementsString() + newStatement;  //printing debug
 
                     //for each loop on declared variable here if wanted to avoid optimisation
-                    String program = sourceCreator.pack(newStatement, generatedStatement.get(0));
-                    System.out.println(program);
+                    String program = sourceCreator.pack(newStatementsList, generatedStatement.get(0));
+                    System.out.println(newStatementsList);
+
+                    //compile program
                     
                     //if results of compilation test return valid values add to ArrayList of next gen
                     newGenStatementsList = new StatementsList(currentStatementsList);
                     newGenStatementsList.appendString(newStatement);
+                    newGenStatementsList.getUsedVariables().add(generatedStatement.get(0)); //adds to usedVariables
                     compiledStatementsList.add(newGenStatementsList);
                     //StatementsList variablesUsed hashmap boolean true for statement that is used as assignment
                 }

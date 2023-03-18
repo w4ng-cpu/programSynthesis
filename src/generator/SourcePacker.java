@@ -7,7 +7,7 @@ public class SourcePacker {
 
     final String startClassCode = "package src;\npublic class CustomClass {\n";
     final String startMainCode = "public Integer aFunction(Integer a) {\n"; //currently limited to integers
-    final String declarationCode = "Integer b;\n";  //for optimisation of model 2, due to read-only input a
+    final String declarationCode = "Integer b;";  //for optimisation of model 2, due to read-only input a
     
     final String returnCode = "\nreturn ";
 

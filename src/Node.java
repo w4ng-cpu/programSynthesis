@@ -13,8 +13,8 @@ import java.util.Iterator;
 
 
 public class Node implements NodeInterface{
-    private String nodeName;
-    private Generator generator;
+    public String nodeName;
+    public Generator generator;
 
     public boolean nodeReady;
     public boolean startSearch;
@@ -27,8 +27,15 @@ public class Node implements NodeInterface{
     public int startPosition;
     public int noNodes;
 
+    public int totalStatementsGenerated;
+    public int totalStatementsTryCompile;
+
     public ArrayList<StatementsList> nextSubSearchSpace;
     public ArrayList<StatementsList> currentSubSearchSpace;
+
+    public long startTime;
+
+    public final int MAXLINE = 2;
 
     Node(String name) {
         this.nodeName = name;
@@ -38,14 +45,6 @@ public class Node implements NodeInterface{
         this.immediateStop = false;
         this.finishLineStop = false;
         this.lineFinished = false;
-    }
-
-    public String getName() {
-        return this.nodeName;
-    }
-
-    public Generator getGenerator() {
-        return this.generator;
     }
 
     public void init() {
@@ -238,10 +237,10 @@ public class Node implements NodeInterface{
         try {
             NodeInterface stub = (NodeInterface) UnicastRemoteObject.exportObject(n, 0);
             Registry registry = LocateRegistry.getRegistry();
-            String url = "rmi://localhost:1099/" + n.getName();
+            String url = "rmi://localhost:1099/" + n.nodeName;
             //n.setUrl(url);
             registry.bind(url, stub);
-            System.out.println("Server ready: " + n.getName());
+            System.out.println("Server ready: " + n.nodeName);
         } catch (Exception e) {
             System.err.println("Exception:");
             e.printStackTrace();
@@ -265,23 +264,42 @@ public class Node implements NodeInterface{
 
             //split up search space
 
+            n.startTime = System.currentTimeMillis();
+            
+            ArrayList<StatementsList> permuStatementsList = n.generator.initialSearch(n.startPosition, n.noNodes);
+            n.totalStatementsGenerated += n.generator.statementsListGenerated;
+            n.totalStatementsTryCompile += n.generator.statementsListGenerated;
+            
+            System.out.println("\n\n________________________________________________");
+            System.out.println("Time to generate first line: " + (System.currentTimeMillis() - n.startTime));
+            System.out.println("Number generated: " + n.totalStatementsGenerated + ":" + n.currentSubSearchSpace.size());
+            System.out.println("Number attemped to compile: " + n.totalStatementsTryCompile);
+            System.out.println("________________________________________________\n\n");
 
-            ArrayList<StatementsList> permuStatementsList = n.getGenerator().initialSearch(n.startPosition, n.noNodes);
+            if (n.startPosition == 0) { //if startnumber = 0 generate declare stastements and add to front of subSearchSpace
+                n.generateNewVariableStatementsList();
+                System.out.println("Generated new line declaration StatementLists\n"); //DEBUG
+            }
             n.addAllStatementsList(permuStatementsList);
             
             
-            while(!n.immediateStop || !(n.finishLineStop)) {
-
+            while((!n.immediateStop || !(n.finishLineStop)) && (n.currentLine != n.MAXLINE)) {
+                n.totalStatementsGenerated = 0;
+                n.totalStatementsTryCompile = 0;
                 //distribute, calculate permutations for next line, send calculation to frontend, frontend distributes
 
-                
+                n.startTime = System.currentTimeMillis();
+
                 for(n.currentPosition = 0; n.currentPosition < n.currentSubSearchSpace.size(); n.currentPosition++) {
-                    permuStatementsList = n.getGenerator().searchNewLine(n.getStatementsList(n.currentPosition));
+                    permuStatementsList = n.generator.searchNewLine(n.getStatementsList(n.currentPosition));
                     n.addAllNextSearchSpace(permuStatementsList);
+                    n.totalStatementsGenerated += n.generator.statementsListGenerated;
+                    n.totalStatementsTryCompile += n.generator.statementsListGenerated;
                 }
 
+                //COMMUNICATE WITH FRONTEND
                 //until everyone is done with subSearchSpace, ask FrontEnd who isnt finished take search space from those who have the most left permutations left
-
+                 
 
                 //setup next subSearchSpace
                 n.currentLine += 1;
@@ -289,11 +307,19 @@ public class Node implements NodeInterface{
                 n.currentSubSearchSpace = new ArrayList<>();    //cearling currentSubSearchSpace
                 if (n.startPosition == 0) { //if startnumber = 0 generate declare stastements and add to front of subSearchSpace
                     n.generateNewVariableStatementsList();
+                    System.out.println("Generated new line declaration StatementLists\n"); //DEBUG
                 }
 
                 n.addAllStatementsList(n.nextSubSearchSpace);     //adding generated StatementsList to subSearchSpace
                 n.nextSubSearchSpace = new ArrayList<>();       //clearing nextSubSearchSpace
                 
+                System.out.println("\n\n________________________________________________");
+                System.out.println("Time to search line " + (System.currentTimeMillis() - n.startTime));
+                System.out.println("Number generated in this line: " + n.totalStatementsGenerated + ":" + n.currentSubSearchSpace.size());
+                System.out.println("Number attemped to compile in this line: " + n.totalStatementsTryCompile);
+                System.out.println("________________________________________________\n\n");
+
+                //COMMUNICATE WITH FRONTEND DATA
             }
 
             //print out overall results

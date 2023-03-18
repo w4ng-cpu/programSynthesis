@@ -67,7 +67,7 @@ public class FrontEnd implements FrontInterface {
             case "listNodes":
                 listNodes();
                 break;
-            case "startNodeSearch":
+            case "startSearch":
                 startSearch();
                 break;
             case "addIOExample":
@@ -77,8 +77,8 @@ public class FrontEnd implements FrontInterface {
                     System.out.println("Bad arguments");
                 }
                 break;
-            case "resetAll(s)":
-                //TODO
+            case "resetAll":
+                checkAllLive();
                 break;
             default:
                 System.out.println("Command not recognised, try 'help'");
@@ -145,8 +145,7 @@ public class FrontEnd implements FrontInterface {
 
         distributeInitialSearch();  //this starts the searches
 
-
-        System.out.println("Finished initialising: Taken " + (System.currentTimeMillis() - start) + "ms\nStarted search");
+        System.out.println("Finished distributing initial searches: Taken " + (System.currentTimeMillis() - start) + "ms\nStarted search");
     }
 
     public void addIOExample(String input, String output) {
