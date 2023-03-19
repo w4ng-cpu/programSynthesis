@@ -29,6 +29,8 @@ public class Node implements NodeInterface{
 
     public int totalStatementsGenerated;
     public int totalStatementsTryCompile;
+    public int totalStatementsFailCompile;  
+    public int totalStatementsGoodCompile;  //statementslist generated that has at least one succesfful compile with returns;
 
     public ArrayList<StatementsList> nextSubSearchSpace;
     public ArrayList<StatementsList> currentSubSearchSpace;
@@ -263,28 +265,34 @@ public class Node implements NodeInterface{
             n.startSearch = false;
 
             //split up search space
-
+            System.out.println("STARTING SEARCH");
             n.startTime = System.currentTimeMillis();
             long m1 = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
             
             ArrayList<StatementsList> permuStatementsList = n.generator.initialSearch(n.startPosition, n.noNodes);
             n.totalStatementsGenerated += n.generator.statementsListGenerated;
             n.totalStatementsTryCompile += n.generator.statementsListTryCompile;
-
+            n.totalStatementsGoodCompile += permuStatementsList.size();
+            n.totalStatementsFailCompile += n.generator.totalStatementsListFailCompile;
             n.addAllStatementsList(permuStatementsList);
 
             
 
             System.out.println("\n\n________________________________________________");
-            System.out.println("Time to generate first line: " + (System.currentTimeMillis() - n.startTime));
-            System.out.println("Number generated: " + n.totalStatementsGenerated + ":" + n.currentSubSearchSpace.size());
+            System.out.println("Time to search a first line: " + ((System.currentTimeMillis() - n.startTime)/1000) + "s");
+            System.out.println("Number generated: " + n.totalStatementsGenerated);
+            System.out.println("Number for next: " + n.totalStatementsGoodCompile);
+            System.out.println("Number dropped: " + (n.totalStatementsGenerated - n.totalStatementsGoodCompile));
             System.out.println("Number attemped to compile: " + n.totalStatementsTryCompile);
+            System.out.println("Number failed to compile: " + n.totalStatementsFailCompile);
             System.out.println("Memory used up: " + ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) - m1));
             System.out.println("________________________________________________\n\n");
             
             while((!n.immediateStop || !(n.finishLineStop)) && (n.currentLine != n.MAXLINE)) {
                 n.totalStatementsGenerated = 0;
                 n.totalStatementsTryCompile = 0;
+                n.totalStatementsGoodCompile = 0;
+                n.totalStatementsFailCompile = 0;
                 //distribute, calculate permutations for next line, send calculation to frontend, frontend distributes
 
                 n.startTime = System.currentTimeMillis();
@@ -296,6 +304,8 @@ public class Node implements NodeInterface{
                     n.addAllNextSearchSpace(permuStatementsList);
                     n.totalStatementsGenerated += n.generator.statementsListGenerated;
                     n.totalStatementsTryCompile += n.generator.statementsListTryCompile;
+                    n.totalStatementsGoodCompile += permuStatementsList.size();
+                    n.totalStatementsFailCompile += n.generator.totalStatementsListFailCompile;
                 }
 
                 //COMMUNICATE WITH FRONTEND
@@ -311,9 +321,12 @@ public class Node implements NodeInterface{
                 n.nextSubSearchSpace = new ArrayList<>();       //clearing nextSubSearchSpace
                 
                 System.out.println("\n\n________________________________________________");
-                System.out.println("Time to search line " + (System.currentTimeMillis() - n.startTime));
-                System.out.println("Number generated in this line: " + n.totalStatementsGenerated + ":" + n.currentSubSearchSpace.size());
+                System.out.println("Time to search a line: " + ((System.currentTimeMillis() - n.startTime)/1000) + "s");
+                System.out.println("Number generated: " + n.totalStatementsGenerated);
+                System.out.println("Number for next: " + n.totalStatementsGoodCompile);
+                System.out.println("Number dropped: " + (n.totalStatementsGenerated - n.totalStatementsGoodCompile));
                 System.out.println("Number attemped to compile in this line: " + n.totalStatementsTryCompile);
+                System.out.println("Number failed to compile: " + n.totalStatementsFailCompile);
                 System.out.println("Memory used up: " + ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) - m1));
                 System.out.println("________________________________________________\n\n");
 
