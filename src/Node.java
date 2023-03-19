@@ -37,7 +37,7 @@ public class Node implements NodeInterface{
 
     public long startTime;
 
-    public final int MAXLINE = 2;
+    public final int MAXLINE = 3;
 
     Node(String name) {
         this.nodeName = name;
@@ -276,7 +276,7 @@ public class Node implements NodeInterface{
             n.totalStatementsFailCompile += n.generator.totalStatementsListFailCompile;
             n.addAllStatementsList(permuStatementsList);
 
-            
+            n.currentLine += 1;
 
             System.out.println("\n\n________________________________________________");
             System.out.println("Time to search a first line: " + ((System.currentTimeMillis() - n.startTime)/1000) + "s");
@@ -288,7 +288,7 @@ public class Node implements NodeInterface{
             System.out.println("Memory used up: " + ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) - m1));
             System.out.println("________________________________________________\n\n");
             
-            while((!n.immediateStop || !(n.finishLineStop)) && (n.currentLine != n.MAXLINE)) {
+            while((!n.immediateStop || !(n.finishLineStop)) && (n.currentLine <= n.MAXLINE)) {
                 n.totalStatementsGenerated = 0;
                 n.totalStatementsTryCompile = 0;
                 n.totalStatementsGoodCompile = 0;
@@ -299,13 +299,22 @@ public class Node implements NodeInterface{
                 m1 = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
 
                 for(n.currentPosition = 0; n.currentPosition < n.currentSubSearchSpace.size(); n.currentPosition++) {
+                    System.out.println("Line: " + n.currentLine + "/" + n.MAXLINE);
                     System.out.println("Node: " + n.currentPosition + "/" + n.currentSubSearchSpace.size());
                     permuStatementsList = n.generator.searchNewLine(n.getStatementsList(n.currentPosition));
-                    n.addAllNextSearchSpace(permuStatementsList);
+                    if (n.currentLine < (n.MAXLINE)) {
+                        System.out.println("GROWING");
+                        n.addAllNextSearchSpace(permuStatementsList);
+                    }
                     n.totalStatementsGenerated += n.generator.statementsListGenerated;
                     n.totalStatementsTryCompile += n.generator.statementsListTryCompile;
                     n.totalStatementsGoodCompile += permuStatementsList.size();
                     n.totalStatementsFailCompile += n.generator.totalStatementsListFailCompile;
+                    long time = System.currentTimeMillis();
+                    System.gc();
+                    System.out.println("Time spent on line: " + ((System.currentTimeMillis() - n.startTime) / 1000) + "s");
+                    System.out.println("Time to gc: " + ((System.currentTimeMillis() - time)) + "ms");
+                    System.out.println("Memory increase since line: " + ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) - m1));
                 }
 
                 //COMMUNICATE WITH FRONTEND

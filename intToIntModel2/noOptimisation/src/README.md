@@ -117,3 +117,55 @@ TRYCOMPILE is the number of times we try to compile, should be more than the num
 
 
         Node Ready!
+
+    TEST 3:
+
+        GROWING
+        Time spent on line: 403s
+        Time to gc: 22ms
+        Memory increase since line: 10976560
+        Line: 2/3
+        Node: 324/325
+
+        ________________________________________________
+        Time to search a StatementsList permutations: 5554ms
+        Number generated: 801
+        Number for next: 649
+        Number dropped: 152
+        Number attemped to compile: 1603
+        Number failed to compile: 630
+        AVG Compile Time: 3ms
+        Memory used up: 178068832
+        ________________________________________________
+
+
+        GROWING
+        Time spent on line: 409s
+        Time to gc: 24ms
+        Memory increase since line: 11251360
+
+
+        ________________________________________________
+        Time to search a line: 409s
+        Number generated: 106101
+        Number for next: 105949
+        Number dropped: 152
+        Number attemped to compile in this line: 107227
+        Number failed to compile: 954
+        Memory used up: 11251360
+        ________________________________________________
+
+
+        Line: 3/3
+        Node: 0/105949
+
+        ________________________________________________
+        Time to search a StatementsList permutations: 1191ms
+        Number generated: 325
+        Number for next: 0
+        Number dropped: 325
+        Number attemped to compile: 326
+        Number failed to compile: 1
+        AVG Compile Time: 3ms
+        Memory used up: 211314960
+

@@ -19,6 +19,7 @@ public class Generator {
     private StatementTypes statementStruct;         //defines the structure of statements we synthesise
     private Permutations terminalValueLists;        //defines what values allowed for the terminals in statement structure
     private ArrayList<String> statementStructList;  //from statementStruct, gets specific statements
+    private MemoryCompiler compiler;                //compielr
 
     private ArrayList<StatementsList> compiledStatementsList;   //StatementsList not dropped but not passed all tests
     private ArrayList<StatementsList> searchStatementsList;     //StatementsList waiting to have next line generated
@@ -52,6 +53,7 @@ public class Generator {
         this.sourceCreator = new SourcePacker();
         this.statementStruct = new StatementTypes();
         this.terminalValueLists = new Permutations();
+        this.compiler = new MemoryCompiler();
 
         this.statementStructList = statementStruct.initStatementsArray();
         this.declareStructure = statementStruct.getStatementStruct("DECLARE");
@@ -253,11 +255,13 @@ public class Generator {
                 String newStatementsList = currentStatementsList.getStatementsString() + newStatement;  //printing debug
 
                 //for each loop on declared variable here if wanted to avoid optimisation
-                int compiled = -1;
+                int compiled = -1;   //TODO -1
                 for (String declaredVariable : currentStatementsList.getDeclaredVariables()) {
                     String program = sourceCreator.pack(newStatementsList, declaredVariable);
                     statementsListTryCompile++;
+                    //long m = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
                     int result = compileTestString(program);
+                    //System.out.println("Increase: " + ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) - m) );
                     if (result == 1) {  //flag to say one return has compiled
                         compiled = 1;  
                     }
@@ -269,7 +273,10 @@ public class Generator {
                 //if results of compilation test return valid values add to ArrayList of next gen
 
 
-                if (ourNode.currentLine != ourNode.MAXLINE - 1) {
+                if (ourNode.currentLine < ourNode.MAXLINE) {
+                    // System.out.println("current: " + ourNode.currentLine);
+                    // System.out.println("max: " + ourNode.MAXLINE);
+                    // System.out.println("NOT IN FINAL");
                     //if even one compilation suceed add to ArrayList of next gen
                     if (compiled == 1) {
                         newGenStatementsList = new StatementsList(currentStatementsList);
@@ -304,10 +311,11 @@ public class Generator {
                     String newStatementsList = currentStatementsList.getStatementsString() + newStatement;  //printing debug
     
                     //for each loop on declared variable here if wanted to avoid optimisation
-                    int compiled = -1;
+                    int compiled = -1;   //TODO -1
                     for (String declaredVariable : currentStatementsList.getDeclaredVariables()) {
                         String program = sourceCreator.pack(newStatementsList, declaredVariable);
                         statementsListTryCompile++;
+                        
                         int result = compileTestString(program);
                         if (result == 1) {  //flag to say one return has compiled
                             compiled = 1;  
@@ -362,10 +370,13 @@ public class Generator {
      * @return
      */
     public int compileTestString(String source) {
+        
         long startCompile = System.currentTimeMillis();
-        Class<?> myClass = MemoryCompiler.newInstance().compile("src.CustomClass", source);
-        totalCompileTime += (System.currentTimeMillis() - startCompile);
 
+        Class<?> myClass = new MemoryCompiler().compile("src.CustomClass", source);
+
+        totalCompileTime += (System.currentTimeMillis() - startCompile);
+        
 
         if (myClass == null) {
             totalStatementsListFailCompile += 1;
