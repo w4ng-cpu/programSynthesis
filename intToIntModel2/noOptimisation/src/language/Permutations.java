@@ -54,7 +54,7 @@ public class Permutations {
         this.newStatementsList = null;
         refreshVarLists();
     }
-
+ 
     /**
      * Used to add variables from currentStatementsList into newStatementsList
      * @param newStatementsList
@@ -192,7 +192,6 @@ public class Permutations {
      * New Variables declared are stored in 
      */
     private void addAssignVariables() {
-        assignVariableList.add("a");
         assignVariableList.addAll(currentStatementsList.getDeclaredVariables());
     }
 

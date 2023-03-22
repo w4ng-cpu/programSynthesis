@@ -3,20 +3,29 @@ package src.generator;
 import java.util.ArrayList;
 import java.util.HashSet;
 
+import src.Node;
+
 public class StatementsList implements java.io.Serializable{
 
     private String statementsString;
     private ArrayList<String> declaredVariables;    //to avoid identifier not found
-    private HashSet<String> usedVariables;          //to avoid null variable
+    private HashSet<String> initVariables;          //to avoid null variable
     private HashSet<String> interactedWithA;        //to avoid useless return
     
 
     public StatementsList() {
         this.statementsString = "";
         this.declaredVariables = new ArrayList<>();
-        this.usedVariables = new HashSet<>();
+        this.initVariables = new HashSet<>();
         this.interactedWithA = new HashSet<>();
-        this.declaredVariables.add("a");
+        this.initVariables.add("a");
+        if (Node.OPT1) {
+            this.declaredVariables.add("b");
+            //System.out.println("OPT1 ACTIVATED");
+        }
+        else {
+            this.declaredVariables.add("a");
+        }
     }
 
 
@@ -29,7 +38,7 @@ public class StatementsList implements java.io.Serializable{
     public StatementsList(String statements, ArrayList<String> declaredVariables) {
         this.statementsString = statements;
         this.declaredVariables = new ArrayList<>(declaredVariables);
-        this.usedVariables = new HashSet<>();
+        this.initVariables = new HashSet<>();
         this.interactedWithA = new HashSet<>();
     }
 
@@ -40,7 +49,7 @@ public class StatementsList implements java.io.Serializable{
     public StatementsList(StatementsList copy) {
         this.statementsString = new String(copy.getStatementsString());
         this.declaredVariables = new ArrayList<>(copy.getDeclaredVariables());
-        this.usedVariables = new HashSet<>(copy.getUsedVariables());
+        this.initVariables = new HashSet<>(copy.getInitVariables());
         this.interactedWithA = new HashSet<>();// TODO
     }
 
@@ -70,7 +79,7 @@ public class StatementsList implements java.io.Serializable{
      * StatementLists fetches to copy
      * @return
      */
-    public HashSet<String> getUsedVariables() {
-        return this.usedVariables;
+    public HashSet<String> getInitVariables() {
+        return this.initVariables;
     }
 }

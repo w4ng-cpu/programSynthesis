@@ -10,7 +10,7 @@ import javax.tools.ToolProvider;
 
 public class MemoryCompiler {
     private JavaCompiler compiler;
-    public MemoryClassLoader classLoader;
+    private MemoryClassLoader classLoader;
     private Iterable<String> options;
 
     public static MemoryCompiler newInstance() {
@@ -19,11 +19,10 @@ public class MemoryCompiler {
 
     public MemoryCompiler() {
         this.compiler = ToolProvider.getSystemJavaCompiler();
-        //this.classLoader = new MemoryClassLoader(ClassLoader.getSystemClassLoader());
+        this.classLoader = new MemoryClassLoader(ClassLoader.getSystemClassLoader());
     }
 
     public Class<?> compile(String className, String sourceCode) {
-        this.classLoader = new MemoryClassLoader(ClassLoader.getSystemClassLoader());
         List<JavaFileObject> compilationUnit = new ArrayList<JavaFileObject>(1);
         try {
             //System.out.println("created compilationUnit!");

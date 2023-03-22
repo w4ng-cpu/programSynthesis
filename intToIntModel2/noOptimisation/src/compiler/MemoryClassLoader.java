@@ -16,10 +16,9 @@ public class MemoryClassLoader extends ClassLoader {
     }
 
     @Override
-    public Class<?> findClass(String name) throws ClassNotFoundException {
+	protected Class<?> findClass(String name) throws ClassNotFoundException {
 		ClassBuffer myClass = compiledClasses.get(name);
 		if (myClass == null) {
-            System.out.println("supermethod");
 			return super.findClass(name);
 		}
         
