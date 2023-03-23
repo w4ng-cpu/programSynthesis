@@ -29,13 +29,26 @@ public class Node implements NodeInterface{
 
     public int totalStatementsGenerated;
     public int totalStatementsTryCompile;
+    public int totalStatementsFailCompile;  
+    public int totalStatementsGoodCompile;  //statementslist generated that has at least one succesfful compile with returns;
+    public long totalCompileTime;           //for each line nanoseconds
+    public long maxCompileTime;             //This is for each line
+    public long minCompileTime;             //This is for each line
+    public long totalGenTime;               //for each line microseconds
+    public long maxGenTime;                 //This is for each line
+    public long minGenTime;                 //This is for each line  
 
     public ArrayList<StatementsList> nextSubSearchSpace;
     public ArrayList<StatementsList> currentSubSearchSpace;
 
     public long startTime;
 
-    public final int MAXLINE = 2;
+    public final int MAXLINE = 2;       //Only searches up to this line, used to help control searchspace
+    public static final boolean COMPILE = true; //uses compile if true (which results in failed compilation and dropped statementlist), else just generate search spaces
+    public static final boolean OPT1 = false;   //a is read only, integer b will already be declared in the first line
+    public static final boolean OPT2 = false;   //use only initialised variables in expressions and in return
+    public static final boolean OPT3 = false;   //use only most recently assigned variable as returns, and skip declare statements
+    public static final boolean OPT4 = false;    //dont compile if expression doesn't interact directly or transitively with a
 
     Node(String name) {
         this.nodeName = name;
@@ -45,12 +58,39 @@ public class Node implements NodeInterface{
         this.immediateStop = false;
         this.finishLineStop = false;
         this.lineFinished = false;
+        System.out.println("MAXLINE: " + MAXLINE);
+        System.out.println("COMPILE: " + COMPILE);
+        System.out.println("OPT 1: " + OPT1);
+        System.out.println("OPT 2: " + OPT2);
+        System.out.println("OPT 3: " + OPT3);
+        System.out.println("OPT 4: " + OPT4);
     }
 
     public void init() {
         currentLine = 1;
         nextSubSearchSpace = new ArrayList<>();
         currentSubSearchSpace = new ArrayList<>();
+        totalCompileTime = 0;
+        totalGenTime = 0;
+        
+    }
+
+    public void getMaxMinCompileTime() {
+        if (generator.minCompileTime < minCompileTime || minCompileTime == 0) {
+            minCompileTime = generator.minCompileTime;
+        }
+        if (generator.maxCompileTime > maxCompileTime || maxCompileTime == 0) {
+            maxCompileTime = generator.maxCompileTime;
+        }
+    }
+
+    public void getMaxMinGenTime() {
+        if (generator.totalTimeTaken < minGenTime || minGenTime == 0) {
+            minGenTime = generator.totalTimeTaken;
+        }
+        if (generator.totalTimeTaken > maxGenTime || maxGenTime == 0) {
+            maxGenTime = generator.totalTimeTaken;
+        }
     }
 
     /**
@@ -205,19 +245,25 @@ public class Node implements NodeInterface{
      * Part of optimisaion 5.0 to avoid converge of declaration statements
      * Generates up to limit of 24 variables
      */
-    public void generateNewVariableStatementsList() {
+    public StatementsList generateNewVariableStatementsList() {
         StatementsList declaredStatementsList = new StatementsList();
         for (int i = 0; i < currentLine; i++) {
             
             if (i < 24) {
-                char newASCII = (char) (99 + i);                   //char 99 is c
+                char newASCII;                   //char 99 is c
+                if (Node.OPT1) {
+                    newASCII = (char) (99 + i);
+                }
+                else {
+                    newASCII = (char) (98 + i);
+                }
                 String newVariable = Character.toString(newASCII);
                 declaredStatementsList.appendString("\nInteger " + newVariable + " ;");
                 declaredStatementsList.getDeclaredVariables().add(newVariable);
             }
         }
         System.out.println(declaredStatementsList.getStatementsString());
-        addStatementsList(declaredStatementsList);
+        return declaredStatementsList;
     }
 
 
@@ -263,61 +309,141 @@ public class Node implements NodeInterface{
             n.startSearch = false;
 
             //split up search space
-
+            System.out.println("STARTING SEARCH");
             n.startTime = System.currentTimeMillis();
+            long m1 = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
             
+            ///////////////////////////////////////////////////////
+            //run INITIAL
             ArrayList<StatementsList> permuStatementsList = n.generator.initialSearch(n.startPosition, n.noNodes);
+
+            if (n.startPosition == 0) { //only one node can generate this
+                permuStatementsList.add(n.generateNewVariableStatementsList());
+            }
+                
+
             n.totalStatementsGenerated += n.generator.statementsListGenerated;
             n.totalStatementsTryCompile += n.generator.statementsListTryCompile;
+            n.totalStatementsGoodCompile += permuStatementsList.size();
+            n.totalStatementsFailCompile += n.generator.totalStatementsListFailCompile;
+            n.totalCompileTime += n.generator.totalCompileTime;
+            
+            
+            n.addAllStatementsList(permuStatementsList);    //add all
 
-            if (n.startPosition == 0) { //if startnumber = 0 generate declare stastements and add to front of subSearchSpace
-                n.generateNewVariableStatementsList();
-                System.out.println("Generated new line declaration StatementLists\n"); //DEBUG
-            }
-            n.addAllStatementsList(permuStatementsList);
+            n.minGenTime = 0;
+            n.maxGenTime = 0;
+            n.getMaxMinGenTime();
+            n.currentLine += 1;
 
             System.out.println("\n\n________________________________________________");
-            System.out.println("Time to generate first line: " + (System.currentTimeMillis() - n.startTime));
-            System.out.println("Number generated: " + n.totalStatementsGenerated + ":" + n.currentSubSearchSpace.size());
+            System.out.println("Time to search a first line: " + ((System.currentTimeMillis() - n.startTime)/1000) + "s");
+            System.out.println("Number generated: " + (n.totalStatementsGenerated + 1));
+            System.out.println("Number for next: " + n.totalStatementsGoodCompile);
+            System.out.println("Number dropped: " + ((n.totalStatementsGenerated + 1) - n.totalStatementsGoodCompile));
             System.out.println("Number attemped to compile: " + n.totalStatementsTryCompile);
+            System.out.println("Number failed to compile: " + n.totalStatementsFailCompile);
+            System.out.println("Memory used up: " + ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) - m1));
+            System.out.println("Average compile time on line: " + ((n.totalCompileTime / n.totalStatementsTryCompile)) + "ns");
+            System.out.println("Max compile time: " + n.generator.maxCompileTime + "ns");
+            System.out.println("Min compile time: " + n.generator.minCompileTime + "ns");
+            System.out.println("________________________________________________");
+            System.out.println("Average gen time on line: " + ((n.generator.totalTimeTaken / (n.totalStatementsGenerated + 1))) + "ns");
+            System.out.println("Max gen time: " + (n.maxGenTime / (n.totalStatementsGenerated + 1)) + "ns");
+            System.out.println("Min gen time: " + (n.minGenTime / (n.totalStatementsGenerated + 1)) + "ns");
             System.out.println("________________________________________________\n\n");
-            
-            while((!n.immediateStop || !(n.finishLineStop)) && (n.currentLine != n.MAXLINE)) {
+
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+            while((!n.immediateStop || !(n.finishLineStop)) && (n.currentLine <= n.MAXLINE)) {
                 n.totalStatementsGenerated = 0;
                 n.totalStatementsTryCompile = 0;
+                n.totalStatementsGoodCompile = 0;
+                n.totalStatementsFailCompile = 0;
+                n.totalCompileTime = 0;
+                n.totalGenTime = 0;
+                n.minGenTime = 0;
+                n.maxGenTime = 0;
+                n.minCompileTime = 0;
+                n.maxCompileTime = 0;
                 //distribute, calculate permutations for next line, send calculation to frontend, frontend distributes
 
                 n.startTime = System.currentTimeMillis();
+                m1 = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
 
                 for(n.currentPosition = 0; n.currentPosition < n.currentSubSearchSpace.size(); n.currentPosition++) {
+                    System.out.println("Line: " + n.currentLine + "/" + n.MAXLINE);
                     System.out.println("Node: " + n.currentPosition + "/" + n.currentSubSearchSpace.size());
+
+                    //searching on thing at a time
                     permuStatementsList = n.generator.searchNewLine(n.getStatementsList(n.currentPosition));
-                    n.addAllNextSearchSpace(permuStatementsList);
+                    if (n.currentLine < (n.MAXLINE)) {
+                        System.out.println("GROWING");
+                        n.addAllNextSearchSpace(permuStatementsList);
+                    }
+
                     n.totalStatementsGenerated += n.generator.statementsListGenerated;
                     n.totalStatementsTryCompile += n.generator.statementsListTryCompile;
+                    n.totalStatementsGoodCompile += permuStatementsList.size();
+                    n.totalStatementsFailCompile += n.generator.totalStatementsListFailCompile;
+                    n.totalCompileTime += (n.generator.totalCompileTime);
+                    n.totalGenTime += (n.generator.totalTimeTaken);
+                    System.out.println("STATEMENT TIME: " + n.totalGenTime);
+                    n.getMaxMinCompileTime();
+                    n.getMaxMinGenTime();
+                    
+                    long time = System.currentTimeMillis();
+                    System.gc();
+                    System.out.println("Currently Generated: " +  permuStatementsList.size());
+                    System.out.println("Time spent on line: " + ((System.currentTimeMillis() - n.startTime) / 1000) + "s");
+                    System.out.println("Time to gc: " + ((System.currentTimeMillis() - time)) + "ms");
+                    System.out.println("Memory increase since line: " + ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) - m1));
+                    System.out.println("Average compile time on line: " + ((n.totalCompileTime) / n.totalStatementsTryCompile) + "ms");
+                    System.out.println("Max compile time: " + n.maxCompileTime + "ns");
+                    System.out.println("Min compile time: " + n.minCompileTime + "ns");
+                    System.out.println("Average gen time " + (n.totalGenTime / n.totalStatementsGenerated) + "ns");
+                    System.out.println("Max gen time: " + (n.maxGenTime) + "ns");
+                    System.out.println("Min gen time: " + (n.minGenTime) + "ns");
+
                 }
+
+
 
                 //COMMUNICATE WITH FRONTEND
                 //until everyone is done with subSearchSpace, ask FrontEnd who isnt finished take search space from those who have the most left permutations left
                  
 
                 //setup next subSearchSpace
+                if (n.startPosition == 0 && (n.currentLine <= n.MAXLINE)) { //only one node can generate this
+                    n.addStatementsList(n.generateNewVariableStatementsList());
+                }
+
                 n.currentLine += 1;
 
                 n.currentSubSearchSpace = new ArrayList<>();    //cearling currentSubSearchSpace
-                if (n.startPosition == 0) { //if startnumber = 0 generate declare stastements and add to front of subSearchSpace
-                    n.generateNewVariableStatementsList();
-                    System.out.println("Generated new line declaration StatementLists\n"); //DEBUG
-                }
 
                 n.addAllStatementsList(n.nextSubSearchSpace);     //adding generated StatementsList to subSearchSpace
+
+
                 n.nextSubSearchSpace = new ArrayList<>();       //clearing nextSubSearchSpace
-                
+
+                System.out.println("NEW SEARCH SPACE " + n.currentSubSearchSpace.size());
                 System.out.println("\n\n________________________________________________");
-                System.out.println("Time to search line " + (System.currentTimeMillis() - n.startTime));
-                System.out.println("Number generated in this line: " + n.totalStatementsGenerated + ":" + n.currentSubSearchSpace.size());
+                System.out.println("Time to search a line: " + ((System.currentTimeMillis() - n.startTime)/1000) + "s");
+                System.out.println("Number generated: " + (n.totalStatementsGenerated + 1));
+                System.out.println("Number for next: " + n.totalStatementsGoodCompile);
+                System.out.println("Number dropped: " + ((n.totalStatementsGenerated + 1) - n.totalStatementsGoodCompile));
                 System.out.println("Number attemped to compile in this line: " + n.totalStatementsTryCompile);
+                System.out.println("Number failed to compile: " + n.totalStatementsFailCompile);
+                System.out.println("Memory used up: " + ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) - m1));
+                System.out.println("________________________________________________");
+                System.out.println("Average gen time on line: " + ((n.totalGenTime)) + "ns");
+                System.out.println("Max gen time: " + (n.maxGenTime) + "ns");
+                System.out.println("Min gen time: " + (n.minGenTime) + "ns");
                 System.out.println("________________________________________________\n\n");
+                System.out.println(n.currentLine);
 
                 //COMMUNICATE WITH FRONTEND DATA
             }

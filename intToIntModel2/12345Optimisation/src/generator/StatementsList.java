@@ -3,37 +3,43 @@ package src.generator;
 import java.util.ArrayList;
 import java.util.HashSet;
 
+import src.Node;
+
 public class StatementsList implements java.io.Serializable{
 
     private String statementsString;
-    private ArrayList<String> declaredVariables;    //to avoid identifier not found
-    private HashSet<String> usedVariables;          //to avoid null variable
+    private HashSet<String> declaredVariables;    //to avoid identifier not found
+    private HashSet<String> initVariables;          //to avoid null variable
     private HashSet<String> interactedWithA;        //to avoid useless return
     
 
     public StatementsList() {
         this.statementsString = "";
-        this.declaredVariables = new ArrayList<>();
-        this.usedVariables = new HashSet<>();
+        this.declaredVariables = new HashSet<>();
+        this.initVariables = new HashSet<>();
         this.interactedWithA = new HashSet<>();
+        this.initVariables.add("a");
+        this.interactedWithA.add("a");
+        if (Node.OPT1) {
+            this.declaredVariables.add("b");
+            // a is read only, we add a to expressions language separately
+        }
+        else {
+            this.declaredVariables.add("a");
+        }
     }
 
-    public StatementsList(String statements) {
-        this.statementsString = statements;
-        this.declaredVariables = new ArrayList<>();
-        this.usedVariables = new HashSet<>();
-        this.interactedWithA = new HashSet<>();
-    }
+
 
     /**
      * Related to optimisaion, used in generating declaration StatementsList
      * @param statements
      * @param declaredVariables
      */
-    public StatementsList(String statements, ArrayList<String> declaredVariables) {
+    public StatementsList(String statements, HashSet<String> declaredVariables) {
         this.statementsString = statements;
-        this.declaredVariables = new ArrayList<>(declaredVariables);
-        this.usedVariables = new HashSet<>();
+        this.declaredVariables = new HashSet<>(declaredVariables);
+        this.initVariables = new HashSet<>();
         this.interactedWithA = new HashSet<>();
     }
 
@@ -43,9 +49,9 @@ public class StatementsList implements java.io.Serializable{
      */
     public StatementsList(StatementsList copy) {
         this.statementsString = new String(copy.getStatementsString());
-        this.declaredVariables = new ArrayList<>(copy.getDeclaredVariables());
-        this.usedVariables = new HashSet<>(copy.getUsedVariables());
-        this.interactedWithA = new HashSet<>();// TODO
+        this.declaredVariables = new HashSet<>(copy.getDeclaredVariables());
+        this.initVariables = new HashSet<>(copy.getInitVariables());
+        this.interactedWithA = new HashSet<>(copy.getInterAVariables());
     }
 
     /**
@@ -65,7 +71,7 @@ public class StatementsList implements java.io.Serializable{
      * StatementLists fetches to copy
      * @return
      */
-    public ArrayList<String> getDeclaredVariables() {
+    public HashSet<String> getDeclaredVariables() {
         return this.declaredVariables;
     }
 
@@ -74,7 +80,25 @@ public class StatementsList implements java.io.Serializable{
      * StatementLists fetches to copy
      * @return
      */
-    public HashSet<String> getUsedVariables() {
-        return this.usedVariables;
+    public HashSet<String> getInitVariables() {
+        return this.initVariables;
+    }
+
+    /**
+     * Permutation fetches variables that have interacted with "a"
+     * StatementLists fetches to copy
+     * @return
+     */
+    public HashSet<String> getInterAVariables() {
+        return this.interactedWithA;
+    }
+
+    /**
+     * Permutation sets variables that have interacted with "a"
+     * StatementLists fetches to copy
+     * @return
+     */
+    public void setInterAVariables(HashSet<String> newHashSet) {
+        this.interactedWithA = newHashSet;
     }
 }

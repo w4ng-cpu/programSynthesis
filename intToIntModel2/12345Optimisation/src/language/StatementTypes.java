@@ -15,6 +15,7 @@ public class StatementTypes {
     public ArrayList<String> initStatementsArray() {
         ArrayList<String> statementArray = new ArrayList<>();
         statementArray.add("EXP_ADD_SUB");
+        statementArray.add("EXP_TIMES1");
         statementArray.add("EXP_TIMES2");
         statementArray.add("EXP_DIVIDE");
         return statementArray;
@@ -65,6 +66,7 @@ public class StatementTypes {
             case "DECLARE":
                 returnTerminals.add("type");
                 returnTerminals.add("new_variable");
+                break;
             case "RETURN":
                 returnTerminals.add("return");
                 returnTerminals.add("assign_variable");

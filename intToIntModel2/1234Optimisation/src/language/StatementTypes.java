@@ -15,7 +15,6 @@ public class StatementTypes {
     public ArrayList<String> initStatementsArray() {
         ArrayList<String> statementArray = new ArrayList<>();
         statementArray.add("EXP_ADD_SUB");
-        statementArray.add("EXP_TIMES1");
         statementArray.add("EXP_TIMES2");
         statementArray.add("EXP_DIVIDE");
         return statementArray;
@@ -38,30 +37,30 @@ public class StatementTypes {
             case "EXP_ADD_SUB":
                 returnTerminals.add("assign_variable");
                 returnTerminals.add("assignment_operator");
-                returnTerminals.add("variable");
+                returnTerminals.add("variable|literal1");
                 returnTerminals.add("add|sub_operator");
                 returnTerminals.add("variable|literal1");
                 break;
             case "EXP_TIMES1":
                 returnTerminals.add("assign_variable");
                 returnTerminals.add("assignment_operator");
-                returnTerminals.add("literal2");
+                returnTerminals.add("variable|literal1");
                 returnTerminals.add("times_operator");
-                returnTerminals.add("literal3");
+                returnTerminals.add("variable|literal1");
                 break;
             case "EXP_TIMES2":
                 returnTerminals.add("assign_variable");
                 returnTerminals.add("assignment_operator");
-                returnTerminals.add("variable");
+                returnTerminals.add("variable|literal1");
                 returnTerminals.add("times_operator");
-                returnTerminals.add("variable|literal3");
+                returnTerminals.add("variable|literal1");
                 break;
             case "EXP_DIVIDE":
                 returnTerminals.add("assign_variable");
                 returnTerminals.add("assignment_operator");
-                returnTerminals.add("variable");
+                returnTerminals.add("variable|literal1");
                 returnTerminals.add("divide_operator");
-                returnTerminals.add("variable|literal4");
+                returnTerminals.add("variable|literal1");
                 break;
             case "DECLARE":
                 returnTerminals.add("type");
