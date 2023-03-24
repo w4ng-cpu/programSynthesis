@@ -44,7 +44,7 @@ public class Node implements NodeInterface{
 
     public long startTime;
 
-    public final int MAXLINE = 3;       //Only searches up to this line, used to help control searchspace
+    public final int MAXLINE = 2;       //Only searches up to this line, used to help control searchspace
     public static final boolean COMPILE = true; //uses compile if true (which results in failed compilation and dropped statementlist), else just generate search spaces
     public static final boolean OPT1 = true;   //a is read only, integer b will already be declared in the first line
     public static final boolean OPT2 = true;   //use only initialised variables in expressions and in return
@@ -320,7 +320,6 @@ public class Node implements NodeInterface{
 
             //split up search space
             System.out.println("STARTING SEARCH");
-            long REALSTART = System.currentTimeMillis();
             n.startTime = System.currentTimeMillis();
             long m1 = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
             
@@ -427,8 +426,6 @@ public class Node implements NodeInterface{
                     //PERFORM WORK
                     //ADD TO SPACE
                 int gotMoreWork = 0;
-                int gotMorePerm = 0;
-                long totalFetchTime = 0;
                 long time = System.currentTimeMillis();
                 boolean allFinished = false;
                 try {
@@ -446,14 +443,13 @@ public class Node implements NodeInterface{
                     String nodeName = "Error";
                     NodeInterface newNode;
                     StatementsList fetchedStatement = null;
-                    long timeToFetch = System.nanoTime();
                     try {
                         Registry registry = LocateRegistry.getRegistry();
                         try { 
                             nodeName = front.getNode();
                             newNode = (NodeInterface) registry.lookup(nodeName);
                             fetchedStatement = newNode.getLastStatement();
-                            totalFetchTime += (System.nanoTime() - timeToFetch);
+           
                             //System.out.println(node + ": Found");
                         } catch (Exception e) {
                             //System.out.println(nodeName + ": Remote Exception");
@@ -468,8 +464,6 @@ public class Node implements NodeInterface{
                     if (fetchedStatement != null) {
                         System.out.println("SEARCHING: " + fetchedStatement.getStatementsString());
                         permuStatementsList = n.generator.searchNewLine(fetchedStatement);
-                        gotMoreWork += 1;
-                        gotMorePerm += (permuStatementsList.size());
                         if (n.currentLine < (n.MAXLINE)) {
                             System.out.println("GROWING");
                             n.addAllNextSearchSpace(permuStatementsList);
@@ -489,13 +483,7 @@ public class Node implements NodeInterface{
                     // }
                 }
 
-                System.out.println("Extra lines searched: " + gotMoreWork);
-                System.out.println("Extra permutations from search: " + gotMorePerm);
-                System.out.println("Time spent on waiting/doing extra: " + ((System.currentTimeMillis() - time)) + "ms\n\n");
-                if (gotMoreWork == 0) {
-                    gotMoreWork = 1;
-                }
-                System.out.println("AVG time to fetch: " + (totalFetchTime/gotMoreWork) + "ns");
+                System.out.println("Time spent on waiting/doing extra: " + ((System.currentTimeMillis() - n.startTime)) + "ms\n\n");
                 
 
                 //COMMUNICATE WITH FRONTEND
@@ -538,7 +526,6 @@ public class Node implements NodeInterface{
             System.out.println("OPT 2: " + OPT2);
             System.out.println("OPT 3: " + OPT3);
             System.out.println("OPT 4: " + OPT4);
-            System.out.println("TOTAL TIME: " + ((System.currentTimeMillis() - REALSTART)/1000) + "s");
             //print out overall results
         }
     }
@@ -563,7 +550,7 @@ public class Node implements NodeInterface{
 
     @Override
     public StatementsList getLastStatement() throws RemoteException {
-        if (currentPosition < currentSubSearchSpace.size() - 2) {
+        if (currentPosition < currentSubSearchSpace.size() - 1) {
             return popLastStatementsList();
         }
         else {

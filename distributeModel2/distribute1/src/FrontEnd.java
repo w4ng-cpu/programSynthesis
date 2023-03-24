@@ -310,7 +310,6 @@ public class FrontEnd implements FrontInterface {
                 Registry registry = LocateRegistry.getRegistry();
                 node = (NodeInterface) registry.lookup(nodeName);
                 int remain = node.numberStatementsRemaining();
-                System.out.println(remain + " : " + nodeName);
                 if (remain > most) {
                     most = remain;
                     returnNode = nodeName;
@@ -323,7 +322,6 @@ public class FrontEnd implements FrontInterface {
                 e.printStackTrace();
             }
         }
-        System.out.println("Returning : " + returnNode);
         return returnNode;
     }
 }
