@@ -8,6 +8,8 @@ import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
 import javax.tools.ToolProvider;
 
+//https://www.soulmachine.me/blog/2015/07/22/compile-and-run-java-source-code-in-memory/
+
 public class MemoryCompiler {
     private JavaCompiler compiler;
     private MemoryClassLoader classLoader;
