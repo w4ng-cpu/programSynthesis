@@ -221,8 +221,9 @@ public class Permutations {
      * 
      */
     private void addVariableList() {
-        if (Node.OPT1) {    
+        if (Node.OPT1 && !Node.OPT2) {    
             variableList.add("a");   //a is read only
+            variableList.addAll(currentStatementsList.getDeclaredVariables());
         }
 
         //this is so uninitialised variables are not used
@@ -231,7 +232,7 @@ public class Permutations {
         }
         
         ///////////////////////////
-        if (!(Node.OPT2 && Node.OPT1)){
+        if (!(Node.OPT2 || Node.OPT1)){     //addall of declared variables to if neither are on
             variableList.addAll(currentStatementsList.getDeclaredVariables());
         }
     }
@@ -289,8 +290,9 @@ public class Permutations {
         varLit1List.add("8");
         varLit1List.add("9");
         varLit1List.add("10");
-        if (Node.OPT1) {    
+        if (Node.OPT1 && !Node.OPT2) {    
             varLit1List.add("a");   //a is read only
+            varLit1List.addAll(currentStatementsList.getDeclaredVariables());
         }
 
         //this is so uninitialised variables are not used
@@ -299,7 +301,7 @@ public class Permutations {
         }
         
         ///////////////////////////
-        if (!(Node.OPT2 && Node.OPT1)){
+        if (!(Node.OPT2 || Node.OPT1)){ //only if both switched off
             varLit1List.addAll(currentStatementsList.getDeclaredVariables());
         }
     }
@@ -335,8 +337,9 @@ public class Permutations {
         varLit3List.add("8");
         varLit3List.add("9");
         varLit3List.add("10");
-        if (Node.OPT1) {    
+        if (Node.OPT1 && !Node.OPT2) {    
             varLit3List.add("a");   //a is read only
+            varLit3List.addAll(currentStatementsList.getDeclaredVariables());
         }
 
         //this is so uninitialised variables are not used
@@ -345,7 +348,7 @@ public class Permutations {
         }
         
         ///////////////////////////
-        if (!(Node.OPT2 && Node.OPT1)){
+        if (!(Node.OPT2 || Node.OPT1)){
             varLit3List.addAll(currentStatementsList.getDeclaredVariables());
         }
     }
@@ -364,8 +367,9 @@ public class Permutations {
         varLit4List.add("8");
         varLit4List.add("9");
         varLit4List.add("10");
-        if (Node.OPT1) {    
+        if (Node.OPT1 && !Node.OPT2) {    
             varLit4List.add("a");   //a is read only
+            varLit4List.addAll(currentStatementsList.getDeclaredVariables());
         }
 
         //this is so uninitialised variables are not used
@@ -374,7 +378,7 @@ public class Permutations {
         }
         
         ///////////////////////////
-        if (!(Node.OPT2 && Node.OPT1)){
+        if (!(Node.OPT2 || Node.OPT1)){
             varLit4List.addAll(currentStatementsList.getDeclaredVariables());
         }
     }

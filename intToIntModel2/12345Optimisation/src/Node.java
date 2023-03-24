@@ -43,12 +43,12 @@ public class Node implements NodeInterface{
 
     public long startTime;
 
-    public final int MAXLINE = 2;       //Only searches up to this line, used to help control searchspace
+    public final int MAXLINE = 3;       //Only searches up to this line, used to help control searchspace
     public static final boolean COMPILE = true; //uses compile if true (which results in failed compilation and dropped statementlist), else just generate search spaces
-    public static final boolean OPT1 = false;   //a is read only, integer b will already be declared in the first line
+    public static final boolean OPT1 = true;   //a is read only, integer b will already be declared in the first line
     public static final boolean OPT2 = false;   //use only initialised variables in expressions and in return
-    public static final boolean OPT3 = false;   //use only most recently assigned variable as returns, and skip declare statements
-    public static final boolean OPT4 = false;    //dont compile if expression doesn't interact directly or transitively with a
+    public static final boolean OPT3 = true;   //use only most recently assigned variable as returns, and skip declare statements
+    public static final boolean OPT4 = true;    //dont compile if expression doesn't interact directly or transitively with a
 
     Node(String name) {
         this.nodeName = name;
@@ -447,7 +447,10 @@ public class Node implements NodeInterface{
 
                 //COMMUNICATE WITH FRONTEND DATA
             }
-
+            System.out.println("OPT 1: " + OPT1);
+            System.out.println("OPT 2: " + OPT2);
+            System.out.println("OPT 3: " + OPT3);
+            System.out.println("OPT 4: " + OPT4);
             //print out overall results
         }
     }

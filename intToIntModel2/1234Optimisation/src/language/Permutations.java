@@ -274,6 +274,9 @@ public class Permutations {
         varLit1List.add("-1");
         if (Node.OPT1) {    
             varLit1List.add("a");   //a is read only
+            if (!Node.OPT2) {
+                varLit1List.addAll(currentStatementsList.getDeclaredVariables());
+            }
         }
 
         //this is so uninitialised variables are not used

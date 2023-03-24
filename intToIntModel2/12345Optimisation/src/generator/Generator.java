@@ -394,7 +394,7 @@ public class Generator {
                     String newStatement = createStringStatement();
                     String newStatementsList = currentStatementsList.getStatementsString() + newStatement;  //printing debug
                     HashSet<String> interactWithA = new HashSet<>(currentStatementsList.getInterAVariables());
-
+                    // System.out.println(newStatement);
                     //for each loop on declared variable here if wanted to avoid optimisation
                     int compiled = -1;   //TODO -1
                     boolean skip = false;
@@ -485,7 +485,7 @@ public class Generator {
                                     compiled = 1;  
                                 }
                                 else {
-                                    System.out.println(program);
+                                    //System.out.println(program);
                                 }
                             }
                         }
@@ -559,7 +559,7 @@ public class Generator {
      * @return
      */
     public int compileTestString(String source) {
-        
+        //System.out.println(source);
         
         long startCompile = System.nanoTime();
         Class<?> myClass = null;

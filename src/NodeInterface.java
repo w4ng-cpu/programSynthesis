@@ -18,4 +18,8 @@ public interface NodeInterface extends Remote {
     public boolean isReady() throws RemoteException;
 
     public void addIOExamples(Integer input, Integer output) throws RemoteException;
+
+    public StatementsList getLastStatement() throws RemoteException;
+
+    public int numberStatementsRemaining() throws RemoteException;
 }

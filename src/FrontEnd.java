@@ -14,6 +14,9 @@ import java.io.InputStreamReader;
 public class FrontEnd implements FrontInterface {
 
     private ArrayList<NodeInterface> nodesList;
+    private int noNodes = 0;
+    private int noNodesPassed = 0;
+    private ArrayList<String> nodesFinished = new ArrayList<>();
 
     public FrontEnd() {
 
@@ -116,7 +119,7 @@ public class FrontEnd implements FrontInterface {
      */
     private void distributeInitialSearch() {
 
-        int noNodes = nodesList.size();
+        noNodes = nodesList.size();
         for (int i = 0; i < noNodes; i++) {
             NodeInterface node = nodesList.get(i);
             
@@ -253,10 +256,10 @@ public class FrontEnd implements FrontInterface {
             NodeInterface node;
             try {
                 Registry registry = LocateRegistry.getRegistry();
-                System.out.println("ADDING: " + nodeName);   //DEBUG
+                //System.out.println("ADDING: " + nodeName);   //DEBUG
                 node = (NodeInterface) registry.lookup(nodeName);
                 nodesList.add(node);
-                System.out.println("ADDED: " + nodeName);   //DEBUG
+                //System.out.println("ADDED: " + nodeName);   //DEBUG
             } catch (Exception e) {
                 System.err.println("Exception:");
                 e.printStackTrace();
@@ -276,5 +279,49 @@ public class FrontEnd implements FrontInterface {
     public void foundProgram(String program) throws RemoteException {
         System.out.println("Found:");
         System.out.println(program);
+    }
+
+    public synchronized boolean areNodesFinished() throws RemoteException {
+        if (nodesFinished.size() == noNodes) {
+            noNodesPassed -= 1;
+            if (noNodesPassed == 0) {
+                nodesFinished = new ArrayList<>();
+            }
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    public synchronized void nodeFinished(String nodeName) throws RemoteException {
+        nodesFinished.add(nodeName);
+        noNodesPassed += 1;
+    }
+
+    public synchronized String getNode() throws RemoteException {
+        getAllNodes();
+        int most = 0;
+        String returnNode = null;
+        ArrayList<String> itr = getNodeList();
+        for (String nodeName : itr) {
+            NodeInterface node;
+            try {
+                Registry registry = LocateRegistry.getRegistry();
+                node = (NodeInterface) registry.lookup(nodeName);
+                int remain = node.numberStatementsRemaining();
+                if (remain > most) {
+                    most = remain;
+                    returnNode = nodeName;
+                }
+
+
+                // System.out.println("ADDED: " + nodeName);   //DEBUG
+            } catch (Exception e) {
+                System.err.println("Exception:");
+                e.printStackTrace();
+            }
+        }
+        return returnNode;
     }
 }

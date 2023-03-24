@@ -14,6 +14,7 @@ import java.util.Iterator;
 
 public class Node implements NodeInterface{
     public String nodeName;
+    public String id;
     public Generator generator;
 
     public boolean nodeReady;
@@ -45,10 +46,10 @@ public class Node implements NodeInterface{
 
     public final int MAXLINE = 2;       //Only searches up to this line, used to help control searchspace
     public static final boolean COMPILE = true; //uses compile if true (which results in failed compilation and dropped statementlist), else just generate search spaces
-    public static final boolean OPT1 = false;   //a is read only, integer b will already be declared in the first line
-    public static final boolean OPT2 = false;   //use only initialised variables in expressions and in return
-    public static final boolean OPT3 = false;   //use only most recently assigned variable as returns, and skip declare statements
-    public static final boolean OPT4 = false;    //dont compile if expression doesn't interact directly or transitively with a
+    public static final boolean OPT1 = true;   //a is read only, integer b will already be declared in the first line
+    public static final boolean OPT2 = true;   //use only initialised variables in expressions and in return
+    public static final boolean OPT3 = true;   //use only most recently assigned variable as returns, and skip declare statements
+    public static final boolean OPT4 = true;    //dont compile if expression doesn't interact directly or transitively with a
 
     Node(String name) {
         this.nodeName = name;
@@ -118,6 +119,7 @@ public class Node implements NodeInterface{
         int last = currentSubSearchSpace.size() - 1;
         StatementsList lastStatementsList = currentSubSearchSpace.get(last);
         currentSubSearchSpace.remove(last);
+        System.out.println("popped: " + lastStatementsList.getStatementsString());
         return lastStatementsList;
     }
 
@@ -228,9 +230,13 @@ public class Node implements NodeInterface{
     public FrontInterface getFrontInterface() {
         FrontInterface frontEnd = null;
 
+        ArrayList<String> temp = getAllRegistry();
+        for (String string : temp) {
+            System.out.println(temp);
+        }
         try {
             Registry registry = LocateRegistry.getRegistry();
-            frontEnd = (FrontInterface) registry.lookup("Controller");
+            frontEnd = (FrontInterface) registry.lookup("rmi://localhost:1099/Controller");
         } catch (Exception e) {
             System.err.println("Exception: FrontEnd not found");
             e.printStackTrace();
@@ -271,6 +277,7 @@ public class Node implements NodeInterface{
 
     public static void main(String args[]) {
         int number;
+        FrontInterface front;
         try {
             number = Integer.parseInt(args[0]);
         } catch (Exception e) {
@@ -284,6 +291,7 @@ public class Node implements NodeInterface{
             NodeInterface stub = (NodeInterface) UnicastRemoteObject.exportObject(n, 0);
             Registry registry = LocateRegistry.getRegistry();
             String url = "rmi://localhost:1099/" + n.nodeName;
+            n.id = url;
             //n.setUrl(url);
             registry.bind(url, stub);
             System.out.println("Server ready: " + n.nodeName);
@@ -292,6 +300,8 @@ public class Node implements NodeInterface{
             e.printStackTrace();
             return;
         }
+
+        front = n.getFrontInterface();
 
         while(true) {
             n.init();
@@ -409,7 +419,67 @@ public class Node implements NodeInterface{
 
                 }
 
+                //TELL FRONTEND IT IS DONE
+                //WHILE (AREALLNODESDONE FALSE)
+                    //TIME HOW LONG EACH LOOP TAKES
+                    //ASK FRONTEND FOR NODE WITH NOT ENOUGH STUFF
+                    //PERFORM WORK
+                    //ADD TO SPACE
+                int gotMoreWork = 0;
+                long time = System.currentTimeMillis();
+                boolean allFinished = false;
+                try {
+                    front.nodeFinished(n.id);
+                    allFinished = front.areNodesFinished(); //TELL FRONTEND ITS DONE
+                } catch (Exception e) {
+                    System.out.println("rmi://localhost:1099/Controller"+ ": Remote Exception");
+                }
+                System.out.println("\n================================================================");
+                System.out.println("\nSTART FETCHING FROM OTHER\n");
+                System.out.println("================================================================\n");
 
+                while (allFinished == false) {
+                    System.out.println("\nWAITING\n");
+                    String nodeName = "Error";
+                    NodeInterface newNode;
+                    StatementsList fetchedStatement = null;
+                    try {
+                        Registry registry = LocateRegistry.getRegistry();
+                        try { 
+                            nodeName = front.getNode();
+                            newNode = (NodeInterface) registry.lookup(nodeName);
+                            fetchedStatement = newNode.getLastStatement();
+           
+                            //System.out.println(node + ": Found");
+                        } catch (Exception e) {
+                            //System.out.println(nodeName + ": Remote Exception");
+                            //System.out.println("EVERYONE DONE?");
+                        }
+                        
+                    } catch (RemoteException e1) {
+                        System.out.println("Failed to get registry");
+                        e1.printStackTrace();
+                    }     
+
+                    if (fetchedStatement != null) {
+                        System.out.println("SEARCHING: " + fetchedStatement.getStatementsString());
+                        permuStatementsList = n.generator.searchNewLine(fetchedStatement);
+                        if (n.currentLine < (n.MAXLINE)) {
+                            System.out.println("GROWING");
+                            n.addAllNextSearchSpace(permuStatementsList);
+                        }
+                    }
+
+                    try {
+                        allFinished = front.areNodesFinished();
+                        System.out.println("CHECK IF FINISHED");
+                    } catch (Exception e) {
+                        System.out.println("rmi://localhost:1099/Controller"+ ": Remote Exception");
+                    }
+                }
+
+                System.out.println("Time spent on waiting/doing extra: " + ((System.currentTimeMillis() - n.startTime)) + "ms");
+                
 
                 //COMMUNICATE WITH FRONTEND
                 //until everyone is done with subSearchSpace, ask FrontEnd who isnt finished take search space from those who have the most left permutations left
@@ -447,7 +517,10 @@ public class Node implements NodeInterface{
 
                 //COMMUNICATE WITH FRONTEND DATA
             }
-
+            System.out.println("OPT 1: " + OPT1);
+            System.out.println("OPT 2: " + OPT2);
+            System.out.println("OPT 3: " + OPT3);
+            System.out.println("OPT 4: " + OPT4);
             //print out overall results
         }
     }
@@ -468,6 +541,21 @@ public class Node implements NodeInterface{
         this.startPosition = startPosition;
         this.noNodes = noNodes;
         this.startSearch = true;
+    }
+
+    @Override
+    public StatementsList getLastStatement() throws RemoteException {
+        if (currentPosition < currentSubSearchSpace.size() - 1) {
+            return popLastStatementsList();
+        }
+        else {
+            return null;
+        }
+    }
+
+    @Override
+    public int numberStatementsRemaining() throws RemoteException {
+        return (currentSubSearchSpace.size() - currentPosition - 1);
     }
 
     @Override

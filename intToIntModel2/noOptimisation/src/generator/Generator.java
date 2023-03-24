@@ -11,6 +11,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 
 public class Generator {
@@ -101,6 +102,7 @@ public class Generator {
 
         currentStatementsList = new StatementsList();
         
+        
         terminalValueLists.assignCurrentStatementsList(currentStatementsList);     //Permutations now acquired used variables
 
         //SECTION IS FOR DEBUG
@@ -144,7 +146,7 @@ public class Generator {
         //now generating new declared variable, add variable to new Statement
         ArrayList<String> temp2 = terminalValueLists.getFromTerminal("new_variable");
         for (String string : temp2) {
-            //System.out.println("NEW VARIABLE:" +string);
+            System.out.println("NEW VARIABLE:" +string);
         }
         currentStatementsList.getDeclaredVariables().addAll(temp2);
         generatedStatement = new ArrayList<String>(declareStructure);   //used to keep track of what to return
@@ -216,9 +218,9 @@ public class Generator {
         }
 
         ArrayList<String> temp2 = terminalValueLists.getFromTerminal("new_variable");
-        // for (String string : temp2) {
-        //     System.out.println("NEW VARIABLE:" +string);
-        // }
+        for (String string : temp2) {
+            System.out.println("NEW VARIABLE:" +string);
+        }
 
 
         //now generating new declared variable, add variable to new Statement
@@ -261,19 +263,102 @@ public class Generator {
                 String newStatement = createStringStatement();
                 String newStatementsList = currentStatementsList.getStatementsString() + newStatement;  //printing debug
                 //System.out.println(newStatementsList);
-
+                HashSet<String> interactWithA = new HashSet<>(currentStatementsList.getInterAVariables());
                 //for each loop on declared variable here if wanted to avoid optimisation
                 int compiled = -1;   //TODO -1
-                for (String declaredVariable : currentStatementsList.getDeclaredVariables()) {
-                    String program = sourceCreator.pack(newStatementsList, declaredVariable);
-                    statementsListTryCompile++;
-                    //long m = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-                    int result = compileTestString(program);
-                    //System.out.println("Increase: " + ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) - m) );
-                    if (result == 1) {  //flag to say one return has compiled
-                        compiled = 1;  
+                boolean skip = false;
+                if (Node.OPT4 && generatedStatement.get(0) != "Integer") {    //check generateStatement position
+                        
+                    if (interactWithA.contains(generatedStatement.get(2)) || interactWithA.contains(generatedStatement.get(4))) {   //if our statement includes stuff that use a, we should not skip compilation
+                        interactWithA.add(generatedStatement.get(0));
+                    }
+                    else {
+                        if (generatedStatement.get(0) != "a") {    //else as long as the assigning to a, we will remove the assignment
+                            interactWithA.remove(generatedStatement.get(0));
+                        }   //we are skipping compilation
+                        compiled = 1;
+                        skip = true;
+                        System.out.println("\nSKIP" + newStatementsList);
                     }
                 }
+                if (!skip) {
+                    if (Node.OPT3) {    //Makes sure only return most recently assigned variable
+                        if (generatedStatement.get(0) != "Integer") {   //Don't bother compiling
+                            // System.out.println("THE THING");
+                            String program;
+                            if (Node.OPT1) {
+                                program = sourceCreator.packOpt(newStatementsList, generatedStatement.get(0));
+                            }
+                            else {
+                                program = sourceCreator.pack(newStatementsList, generatedStatement.get(0));
+                            }
+
+                            statementsListTryCompile++;
+
+                            int result = compileTestString(program);
+
+                            if (result == 1) {  //flag to say one return has compiled
+                                compiled = 1;  
+                            }
+                            else {
+                                System.out.println(program);
+                            }
+                            //System.out.println(program); //DEBUG
+                        }
+                        else {          //Is a declare statement, so just pretend it will work
+                            compiled = 1;
+                        }
+                    }
+                    else if (Node.OPT2) {
+                        HashSet<String> temp = new HashSet<>(currentStatementsList.getInitVariables());
+                        if (generatedStatement.get(0) != "Integer") {
+                            temp.add(generatedStatement.get(0));
+                        }
+
+                        for (String declaredVariable : temp) {
+                            String program;
+                            if (Node.OPT1) {
+                                program = sourceCreator.packOpt(newStatementsList, declaredVariable);
+                            }
+                            else {
+                                program = sourceCreator.pack(newStatementsList, declaredVariable);
+                            }
+                            statementsListTryCompile++;
+                            //long m = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+                            int result = compileTestString(program);
+                            //System.out.println("Increase: " + ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) - m) );
+                            if (result == 1) {  //flag to say one return has compiled
+                                compiled = 1;  
+                            }
+                            else {
+                                System.out.println(program);
+                            }
+                            // System.out.println(program); //DEBUG
+                        }
+                    }
+                    else {
+                        for (String declaredVariable : currentStatementsList.getDeclaredVariables()) {
+                            String program;
+                            if (Node.OPT1) {
+                                program = sourceCreator.packOpt(newStatementsList, declaredVariable);
+                            }
+                            else {
+                                program = sourceCreator.pack(newStatementsList, declaredVariable);
+                            }
+                            statementsListTryCompile++;
+                            //long m = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+                            int result = compileTestString(program);
+                            //System.out.println("Increase: " + ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) - m) );
+                            if (result == 1) {  //flag to say one return has compiled
+                                compiled = 1;  
+                            }
+                            else {
+                                System.out.println(program); //DEBUG
+                            }
+                        }
+                    }
+                }
+
                 //System.out.println(newStatementsList);
 
                 //compile program
@@ -290,8 +375,26 @@ public class Generator {
                         // System.out.println("ADDED");
                         newGenStatementsList = new StatementsList(currentStatementsList);
                         newGenStatementsList.appendString(newStatement);
-                        newGenStatementsList.getUsedVariables().add(generatedStatement.get(0)); //adds to usedVariables
+
+                        if (generatedStatement.get(0) != "Integer") {
+                            if (Node.OPT4) {
+                                newGenStatementsList.setInterAVariables(interactWithA);
+                            }
+
+
+                            if (Node.OPT2) {
+                                newGenStatementsList.getInitVariables().add(generatedStatement.get(0)); //adds to usedVariables
+                            }
+
+                        }
+
                         compiledStatementsList.add(newGenStatementsList);
+                    }
+                    else if (generatedStatement.get(0) == "Integer") {  //For declare statements because with Opt 1 a is read only hence you can only return b, hence declare statements would never compile
+                        compiledStatementsList.add(newGenStatementsList);
+                    }      
+                    else {
+                        System.out.println(newStatementsList);
                     }
 
                 }
@@ -319,28 +422,132 @@ public class Generator {
                     //return the most recently used variable, using sourcepacker
                     String newStatement = createStringStatement();
                     String newStatementsList = currentStatementsList.getStatementsString() + newStatement;  //printing debug
-    
+                    HashSet<String> interactWithA = new HashSet<>(currentStatementsList.getInterAVariables());
                     //for each loop on declared variable here if wanted to avoid optimisation
                     int compiled = -1;   //TODO -1
-                    for (String declaredVariable : currentStatementsList.getDeclaredVariables()) {
-                        String program = sourceCreator.pack(newStatementsList, declaredVariable);
-                        statementsListTryCompile++;
+                    boolean skip = false;
+                    if (Node.OPT4 && generatedStatement.get(0) != "Integer") {    //check generateStatement position
                         
-                        int result = compileTestString(program);
-                        if (result == 1) {  //flag to say one return has compiled
-                            compiled = 1;  
+                        if (interactWithA.contains(generatedStatement.get(2)) || interactWithA.contains(generatedStatement.get(4))) {   //if our statement includes stuff that use a, we should not skip compilation
+                            interactWithA.add(generatedStatement.get(0));
+                        }
+                        else {
+                            if (generatedStatement.get(0) != "a") {    //else as long as the assigning to a, we will remove the assignment
+                                interactWithA.remove(generatedStatement.get(0));
+                            }   //we are skipping compilation
+                            compiled = 1;
+                            skip = true;
+                            System.out.println("\nSKIP" + newStatementsList);
                         }
                     }
-                    //System.out.println(newStatementsList);
+
+                    if (!skip) {
+                        if (Node.OPT3) {    //Makes sure only return most recently assigned variable
+                            if (generatedStatement.get(0) != "Integer") {   //Don't bother compiling
+                                String program;
+                                if (Node.OPT1) {
+                                    program = sourceCreator.packOpt(newStatementsList, generatedStatement.get(0));
+                                }
+                                else {
+                                    program = sourceCreator.pack(newStatementsList, generatedStatement.get(0));
+                                }
+    
+                                statementsListTryCompile++;
+    
+                                int result = compileTestString(program);
+    
+                                if (result == 1) {  //flag to say one return has compiled
+                                    compiled = 1;  
+                                }
+                                else {
+                                    System.out.println(program);
+                                }
+                            }
+                            else {          //Is a declare statement, so just pretend it compiled
+                                compiled = 1;
+                            }
+                            //System.out.println(newStatementsList);
+                        }
+                        else if (Node.OPT2) {   //Makes sure only return initalised variable
+                            HashSet<String> temp = new HashSet<>(currentStatementsList.getInitVariables());
+                            if (generatedStatement.get(0) != "Integer") {
+                                temp.add(generatedStatement.get(0));
+                            }
+    
+                            for (String declaredVariable : temp) {
+                                String program;
+                                if (Node.OPT1) {
+                                    program = sourceCreator.packOpt(newStatementsList, declaredVariable);
+                                }
+                                else {
+                                    program = sourceCreator.pack(newStatementsList, declaredVariable);
+                                }
+                                statementsListTryCompile++;
+                                //long m = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+                                int result = compileTestString(program);
+                                //System.out.println("Increase: " + ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) - m) );
+                                if (result == 1) {  //flag to say one return has compiled
+                                    compiled = 1;  
+                                }
+                                else {
+                                    System.out.println(program);
+                                }
+                                // System.out.println(program); //DEBUG
+                            }
+                        }
+                        else {
+                            for (String declaredVariable : currentStatementsList.getDeclaredVariables()) {
+                                String program;
+                                if (Node.OPT1) {
+                                    program = sourceCreator.packOpt(newStatementsList, declaredVariable);
+                                }
+                                else {
+                                    program = sourceCreator.pack(newStatementsList, declaredVariable);
+                                }
+                                statementsListTryCompile++;
+                                //long m = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+                                int result = compileTestString(program);
+                                //System.out.println(program);
+                                //System.out.println("Increase: " + ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) - m) );
+                                if (result == 1) {  //flag to say one return has compiled
+                                    compiled = 1;  
+                                }
+                                else {
+                                    System.out.println(program);
+                                }
+                            }
+                        }
+                    }
+                    
+                    
     
                     //compile program
                     
                     //if even one compilation suceed add to ArrayList of next gen
                     if (compiled == 1) {
+                        // System.out.println("ADDED");
                         newGenStatementsList = new StatementsList(currentStatementsList);
                         newGenStatementsList.appendString(newStatement);
-                        newGenStatementsList.getUsedVariables().add(generatedStatement.get(0)); //adds to usedVariables
+
+                        if (generatedStatement.get(0) != "Integer") {
+                            if (Node.OPT4) {
+                                newGenStatementsList.setInterAVariables(interactWithA);
+                            }
+
+
+                            if (Node.OPT2) {
+                                newGenStatementsList.getInitVariables().add(generatedStatement.get(0)); //adds to usedVariables
+                            }
+
+                        }
+
                         compiledStatementsList.add(newGenStatementsList);
+                    }
+                    else if (generatedStatement.get(0) == "Integer") {  //For declare statements because with Opt 1 a is read only hence you can only return b, hence declare statements would never compile
+                        compiledStatementsList.add(newGenStatementsList);
+                    }      
+                    else {
+                        System.out.println(newStatementsList);
                     }
                     //StatementsList variablesUsed hashmap boolean true for statement that is used as assignment
                 }
@@ -381,28 +588,34 @@ public class Generator {
      */
     public int compileTestString(String source) {
         
-        // long startCompile = System.nanoTime();
+        long startCompile = System.nanoTime();
+        Class<?> myClass = null;
+        
+        if (Node.COMPILE) {
+            myClass = MemoryCompiler.newInstance().compile("src.CustomClass", source);
+        }
+            
 
-        // Class<?> myClass = MemoryCompiler.newInstance().compile("src.CustomClass", source);
-
-        // long compileTime = System.nanoTime() - startCompile;
-        // totalCompileTime += compileTime;
+        long compileTime = System.nanoTime() - startCompile;
+        totalCompileTime += compileTime;
         
 
-        // if (myClass == null) {
-        //     totalStatementsListFailCompile += 1;
-        //     return -1;
-        // }
-        // //System.out.println(compileTime);
-        // /////   Getting min and max
-        // if (compileTime < minCompileTime) {
-        //     minCompileTime = compileTime;
-        // }
-        // if (compileTime > maxCompileTime) {
-        //     maxCompileTime = compileTime;
-        // }
-        /////
+        if (myClass == null && Node.COMPILE) {
+            totalStatementsListFailCompile += 1;
+            return -1;
+        }
+        //System.out.println(compileTime);
+        /////   Getting min and max
+        if (compileTime < minCompileTime) {
+            minCompileTime = compileTime;
+        }
+        if (compileTime > maxCompileTime) {
+            maxCompileTime = compileTime;
+        }
+        
+        return 1;
 
+        //////////////////////////////////////////
         //System.out.println(rawCode);
 
         // Integer result;
@@ -430,6 +643,6 @@ public class Generator {
         //     return -1;
         // }
 
-        return 1;
+
     }
 }

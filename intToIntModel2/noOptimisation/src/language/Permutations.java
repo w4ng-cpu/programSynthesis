@@ -2,6 +2,7 @@ package src.language;
 
 import java.util.ArrayList;
 
+import src.Node;
 import src.generator.StatementsList;
 
 /**
@@ -180,14 +181,21 @@ public class Permutations {
     private void addNewVariable() {
         int newNumberASCII = currentStatementsList.getDeclaredVariables().size();
         if (newNumberASCII < 25) {
-            char newASCII = (char) (97 + newNumberASCII);                   //char 99 is c
+            char newASCII;
+            if (Node.OPT1) {
+                newASCII = (char) (98 + newNumberASCII);    
+            }
+            else {
+                newASCII = (char) (97 + newNumberASCII);  
+            }
+                 //char 99 is c
             newVariableList.add(Character.toString(newASCII));
         }
     }
 
     /**
      * These variables are used to store results of expressions, (MODIFY)
-     * Variable a is READ-ONLY
+     * Variable a is READ-ONLY, so will not be added
      * Variable b is a STAPLE
      * New Variables declared are stored in 
      */
@@ -206,6 +214,7 @@ public class Permutations {
      * These variables are used in specific LHS expressions, (READ)
      * ADD/SUB, TIMES2, DIVIDE
      * Variables a and b are staple
+     * 
      */
     private void addVariableList() {
         variableList.add("a");
@@ -251,6 +260,8 @@ public class Permutations {
 
     /**
      * THIS MAKES UP OUR EXPRESSIONS
+     * This is the base version
+     * If optimisation 1 is on, a needs to be added individually
      */
     private void addVarLit1List() {
         varLit1List.add("1");
@@ -261,7 +272,20 @@ public class Permutations {
         varLit1List.add("10");
         varLit1List.add("100");
         varLit1List.add("-1");
-        varLit1List.addAll(currentStatementsList.getDeclaredVariables());
+        if (Node.OPT1 && !Node.OPT2) {    
+            varLit1List.add("a");   //a is read only
+            varLit1List.addAll(currentStatementsList.getDeclaredVariables());
+        }
+
+        //this is so uninitialised variables are not used
+        if (Node.OPT2) {
+            varLit1List.addAll(currentStatementsList.getInitVariables());
+        }
+        
+        ///////////////////////////
+        if (!(Node.OPT2 || Node.OPT1)){ //only if both switched off
+            varLit1List.addAll(currentStatementsList.getDeclaredVariables());
+        }
     }
 
     /**
@@ -296,7 +320,7 @@ public class Permutations {
         varLit3List.add("9");
         varLit3List.add("10");
         varLit3List.add("a");
-        varLit3List.addAll(currentStatementsList.getUsedVariables());
+        varLit3List.addAll(currentStatementsList.getInitVariables());
     }
 
     /**
@@ -314,7 +338,7 @@ public class Permutations {
         varLit4List.add("9");
         varLit4List.add("10");
         varLit4List.add("a");
-        varLit4List.addAll(currentStatementsList.getUsedVariables());
+        varLit4List.addAll(currentStatementsList.getInitVariables());
     }
 
     private void addTerminator() {
